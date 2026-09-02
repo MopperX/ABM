@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "tests": [
+    {
+      "id": "M1",
+      "title": "Simple genre prompt",
+      "prompt": "A calm intimate solo piano piece, warm and reflective, no vocals.",
+      "duration_seconds": 12,
+      "capability": "text",
+      "human_review": ["genre/style match", "absence of vocals", "musical coherence"]
+    },
+    {
+      "id": "M2",
+      "title": "Instrumentation and mood",
+      "prompt": "A cinematic orchestral introduction with warm strings, French horns and soft timpani, slowly building from mysterious to hopeful, no vocals.",
+      "duration_seconds": 12,
+      "capability": "text",
+      "human_review": ["requested instruments", "mood progression", "musical coherence"]
+    },
+    {
+      "id": "M3",
+      "title": "Tempo and rhythm control",
+      "prompt": "An instrumental electronic dance groove at exactly 120 BPM, steady four-on-the-floor kick, crisp hi-hats and a simple synth bass line.",
+      "duration_seconds": 10,
+      "capability": "text",
+      "expected_bpm": 120,
+      "bpm_tolerance": 10,
+      "human_review": ["dance groove", "steady pulse", "instrument match"]
+    },
+    {
+      "id": "M4",
+      "title": "Melody-conditioned generation",
+      "prompt": "Develop the supplied melody into a gentle cinematic instrumental arrangement with piano and strings. Preserve the recognizable melodic contour.",
+      "duration_seconds": 10,
+      "capability": "melody",
+      "melody_fixture": "benchmark-melody.wav",
+      "human_review": ["melody preserved", "arrangement quality", "prompt adherence"]
+    },
+    {
+      "id": "M5",
+      "title": "Longer musical structure",
+      "prompt": "A cinematic instrumental cue with a quiet piano introduction, a gradual string build, a clear orchestral climax, and a calm resolving ending. No vocals.",
+      "duration_seconds": 20,
+      "capability": "text",
+      "human_review": ["intro/build/climax/resolution", "long-range coherence", "absence of vocals"]
+    },
+    {
+      "id": "M6",
+      "title": "Complex multi-constraint prompt",
+      "prompt": "An instrumental synthwave track in A minor around 105 BPM, with analog bass, gated drums, shimmering arpeggios and a short electric-guitar lead near the end; energetic but not aggressive, no vocals.",
+      "duration_seconds": 12,
+      "capability": "text",
+      "expected_bpm": 105,
+      "bpm_tolerance": 12,
+      "expected_key": "A minor",
+      "human_review": ["multiple constraints followed", "instrumentation", "mood", "musical coherence"]
+    },
+    {
+      "id": "M7",
+      "title": "Blind listening quality",
+      "prompt": "A polished instrumental modern jazz trio performance with piano, upright bass and brushed drums, relaxed late-night club atmosphere, natural dynamics and no vocals.",
+      "duration_seconds": 12,
+      "capability": "text",
+      "human_review": ["overall musical quality", "naturalness", "artifacts", "instrument realism", "prompt adherence"]
+    }
+  ]
+}

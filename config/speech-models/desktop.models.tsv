@@ -1,0 +1,6 @@
+# enabled	kind	id	model	language	speaker	notes
+true	stt	whisper-small	small	nl		Multilingual whisper.cpp baseline
+false	stt	whisper-medium	medium	nl		Stronger multilingual comparison; larger download
+false	stt	whisper-large-v3-turbo	large-v3-turbo	nl		Large fast Whisper comparison; enable on capable workers
+true	tts	piper-nl-alex	vits-piper-nl_NL-alex-medium	nl_NL	0	Dutch single-speaker VITS/Piper baseline through sherpa-onnx
+false	tts	piper-nl-pim	vits-piper-nl_NL-pim-medium	nl_NL	0	Second Dutch voice for model comparison

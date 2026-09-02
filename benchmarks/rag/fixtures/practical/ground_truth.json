@@ -1,0 +1,67 @@
+{
+  "R1": {
+    "title": "Exact fact retrieval",
+    "questions": ["On which TCP port does the Orion telemetry gateway listen?"],
+    "relevant": [["orion-network.md"]],
+    "checks": [{"name":"port 9443","patterns":["9443"],"kind":"all"}],
+    "required_sources": ["orion-network.md"]
+  },
+  "R2": {
+    "title": "Combine multiple documents",
+    "questions": ["Summarize the approved Borealis deployment: when does it start, which backend goes first, and what condition requires rollback?"],
+    "relevant": [["borealis-schedule.md","borealis-order.md","borealis-rollback.md"]],
+    "checks": [
+      {"name":"Thursday 21:30","patterns":["Thursday","21:30"],"kind":"all"},
+      {"name":"alpha first","patterns":["alpha","first"],"kind":"all"},
+      {"name":"two failed health checks","patterns":["two","health check"],"kind":"all"}
+    ],
+    "required_sources": ["borealis-schedule.md","borealis-order.md","borealis-rollback.md"]
+  },
+  "R3": {
+    "title": "Missing information",
+    "questions": ["Which encryption cipher is used for stored archived project exports?"],
+    "relevant": [["archive-policy.md"]],
+    "checks": [
+      {"name":"states unknown","patterns":["not specified|does not specify|cannot (?:be )?determine|unknown|not provided"],"kind":"any"},
+      {"name":"no invented common cipher","patterns":["AES-?256|AES-?128|ChaCha20|RSA-?2048"],"kind":"not"}
+    ],
+    "required_sources": ["archive-policy.md"]
+  },
+  "R4": {
+    "title": "Conflicting documents",
+    "questions": ["What telemetry retention period do the available documents specify? Report any conflict rather than silently choosing one."],
+    "relevant": [["retention-old.md","retention-new.md"]],
+    "checks": [
+      {"name":"both values","patterns":["30","45"],"kind":"all"},
+      {"name":"recognizes conflict/versioning","patterns":["conflict|different|supersed|version|older|newer"],"kind":"any"}
+    ],
+    "required_sources": ["retention-old.md","retention-new.md"]
+  },
+  "R5": {
+    "title": "Larger document set",
+    "questions": ["At what maximum rate may the Vela ingestion queue be drained during controlled recovery?"],
+    "relevant": [["vela-queue.md"]],
+    "checks": [{"name":"600 messages per second","patterns":["600","messages per second|messages/sec|msg/s"],"kind":"all"}],
+    "required_sources": ["vela-queue.md"]
+  },
+  "R6": {
+    "title": "PDF retrieval",
+    "questions": ["What emergency maintenance contact code is stated in the PDF maintenance card?"],
+    "relevant": [["emergency-maintenance.pdf"]],
+    "checks": [{"name":"KESTREL-47","patterns":["KESTREL-47"],"kind":"all"}],
+    "required_sources": ["emergency-maintenance.pdf"]
+  },
+  "R7": {
+    "title": "Multi-turn retrieved context",
+    "questions": [
+      "Which team owns Nimbus alert routing?",
+      "According to that team's runbook, after how many minutes without remediation must the alert be escalated to the secondary on-call?"
+    ],
+    "relevant": [["nimbus-ownership.md"],["observability-escalation.md"]],
+    "checks": [
+      {"name":"owner","patterns":["Observability"],"kind":"all"},
+      {"name":"15 minute escalation","patterns":["15","minute"],"kind":"all"}
+    ],
+    "required_sources": ["nimbus-ownership.md","observability-escalation.md"]
+  }
+}

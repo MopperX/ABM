@@ -1,0 +1,5 @@
+absl-py>=2,<3
+langdetect>=1.0.9,<2
+nltk>=3.9,<4
+immutabledict>=4,<5
+datasets>=3,<5

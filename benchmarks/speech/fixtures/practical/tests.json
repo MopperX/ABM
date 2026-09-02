@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "stt": [
+    {
+      "id": "S1",
+      "title": "Helder Nederlands",
+      "source": "fleurs-clean",
+      "description": "Een vaste schone Nederlandse FLEURS-opname."
+    },
+    {
+      "id": "S2",
+      "title": "Nederlands met achtergrondruis",
+      "source": "fleurs-noisy",
+      "description": "Dezelfde soort read-speech met deterministisch toegevoegde ruis op 10 dB SNR."
+    },
+    {
+      "id": "S3",
+      "title": "Technisch Nederlands en Engels",
+      "source": "synthetic-tts",
+      "reference": "De Laravel queue worker verwerkt de job opnieuw. Controleer daarna de Livewire component, de Web Awesome button en de Redis verbinding op poort 6379.",
+      "description": "Technische termen, frameworknamen en een poortnummer in één Nederlandse zin."
+    },
+    {
+      "id": "S4",
+      "title": "Meerdere Nederlandse sprekers",
+      "source": "synthetic-two-speaker",
+      "turns": [
+        "De eerste server heet alpha en wordt als eerste bijgewerkt.",
+        "Daarna controleren we de healthcheck voordat bravo uit de loadbalancer gaat.",
+        "Redis blijft tijdens de hele rolling deployment beschikbaar.",
+        "Als de healthcheck faalt, voeren we eerst een rollback uit."
+      ],
+      "description": "Vier afwisselende beurten, gegenereerd met twee verschillende Nederlandse stemmen."
+    },
+    {
+      "id": "S5",
+      "title": "Langere Nederlandse opname",
+      "source": "fleurs-concatenated",
+      "description": "Meerdere vaste FLEURS-opnamen samengevoegd tot een langere transcriptietaak."
+    }
+  ],
+  "tts": [
+    {
+      "id": "T1",
+      "title": "Natuurlijke Nederlandse zin",
+      "text": "Vanmiddag bespreken we de planning en controleren we of alle werkzaamheden veilig en zonder onderbreking kunnen worden uitgevoerd.",
+      "human_review": ["natuurlijkheid", "verstaanbaarheid", "Nederlands accent"]
+    },
+    {
+      "id": "T2",
+      "title": "Technische uitspraak",
+      "text": "Controleer de Laravel queue worker, de Livewire component, Web Awesome, Redis, PostgreSQL en HTTPS op poort vier vier drie.",
+      "human_review": ["technische termen", "Engelse merknamen", "verstaanbaarheid"]
+    },
+    {
+      "id": "T3",
+      "title": "Langere tekst",
+      "text": "Tijdens een rolling deployment halen we eerst server alpha tijdelijk uit de loadbalancer. Daarna voeren we de nieuwe release uit en wachten we op een succesvolle healthcheck. Pas wanneer die controle is geslaagd, plaatsen we alpha terug en herhalen we dezelfde procedure voor server bravo. Als een controle mislukt, stoppen we de uitrol en voeren we een rollback uit voordat we verdergaan.",
+      "human_review": ["consistentie", "zinsritme", "lange-termijn verstaanbaarheid"]
+    },
+    {
+      "id": "T4",
+      "title": "Snelheidsmeting",
+      "text": "Dit is een vaste snelheidsmeting voor lokale spraaksynthese. De benchmark vergelijkt de generatietijd met de lengte van het geproduceerde audiobestand.",
+      "human_review": ["verstaanbaarheid"]
+    }
+  ]
+}

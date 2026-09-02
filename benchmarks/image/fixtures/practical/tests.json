@@ -1,0 +1,102 @@
+{
+  "tests": [
+    {
+      "id": "I1",
+      "title": "Simple object",
+      "prompt": "A single glossy red ceramic mug centered on a plain white table, studio lighting, no other objects.",
+      "judge_questions": [
+        [
+          "Is there exactly one mug?",
+          "yes"
+        ],
+        [
+          "Is the mug red?",
+          "yes"
+        ],
+        [
+          "Is the mug on a white table?",
+          "yes"
+        ]
+      ]
+    },
+    {
+      "id": "I2",
+      "title": "Objects and relation",
+      "prompt": "A blue cube on the left and a yellow sphere on the right, both resting on a smooth gray floor, clean studio scene.",
+      "judge_questions": [
+        [
+          "Is there a blue cube?",
+          "yes"
+        ],
+        [
+          "Is there a yellow sphere?",
+          "yes"
+        ],
+        [
+          "Is the blue cube to the left of the yellow sphere?",
+          "yes"
+        ]
+      ]
+    },
+    {
+      "id": "I3",
+      "title": "Count, color and position",
+      "prompt": "Three green apples in a horizontal row. A small red ball floats directly above the middle apple. Plain light background.",
+      "judge_questions": [
+        [
+          "How many green apples are visible?",
+          "3"
+        ],
+        [
+          "Is there a red ball?",
+          "yes"
+        ],
+        [
+          "Is the red ball above the middle apple?",
+          "yes"
+        ]
+      ]
+    },
+    {
+      "id": "I4",
+      "title": "Text rendering",
+      "prompt": "A minimal white rectangular sign photographed straight-on. The sign contains only the large black uppercase text: LOCAL AI. No other words or symbols.",
+      "judge_questions": [
+        [
+          "What exact text is written on the sign?",
+          "LOCAL AI"
+        ]
+      ]
+    },
+    {
+      "id": "I5",
+      "title": "Photorealism",
+      "prompt": "Photorealistic close-up photograph of a vintage mechanical wristwatch on a dark wooden desk beside a fountain pen, soft morning window light, realistic materials and reflections.",
+      "human_review": [
+        "photorealism",
+        "materials",
+        "composition"
+      ]
+    },
+    {
+      "id": "I6",
+      "title": "Illustration / concept art",
+      "prompt": "Polished concept-art illustration of a compact futuristic home AI server room, two small rack cabinets, soft indirect lighting, tidy cables, readable spatial depth, cinematic but practical design.",
+      "human_review": [
+        "composition",
+        "coherence",
+        "visual quality"
+      ]
+    },
+    {
+      "id": "I7",
+      "title": "Technical UI illustration",
+      "prompt": "Clean desktop analytics dashboard UI mockup for a local AI benchmark. Include a left navigation, a table comparing three models, and two simple performance charts. Modern light interface, clear hierarchy, no logos.",
+      "human_review": [
+        "layout",
+        "UI coherence",
+        "technical usefulness"
+      ]
+    }
+  ]
+}

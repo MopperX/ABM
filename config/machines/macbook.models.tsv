@@ -1,0 +1,17 @@
+# enabled	model	benchmarks	modes	web	notes
+true	qwen3:4b	core,rag,coding-agent	nothinking,thinking	true	Core comparison
+true	qwen3:8b	core,rag,coding-agent	nothinking,thinking	false	Core comparison
+false	qwen3:14b	core,rag,coding-agent	nothinking,thinking	false	Enable if memory allows
+false	qwen3.8:27b	core,coding-agent,rag,vision	nothinking,thinking	true	Enable on larger-memory Macs
+false	gpt-oss:20b	core,coding-agent,rag	low,medium,high	true	Enable on larger-memory Macs
+true	qwen2.5-coder:3b	coding-agent	standard	false	Coder
+true	qwen2.5-coder:7b	coding-agent	standard	false	Coder
+false	qwen2.5-coder:14b	coding-agent	standard	false	Enable if memory allows
+false	qwen2.5-coder:32b	coding-agent	standard	false	Enable on larger-memory Mac
+false	qwen3-coder:30b	coding-agent	standard	false	Enable on larger-memory Mac
+false	qwen3-coder-next	coding-agent	standard	false	Enable on larger-memory Mac
+false	qwen3.6:27b	core,coding-agent,rag,vision	nothinking,thinking	false	Current multimodal general model; enable when suitable
+true	qwen3-vl:4b-instruct	vision	standard	false	Official no-thinking Vision baseline; 3.3 GB
+true	qwen3-vl:4b-thinking	vision	standard	false	Official thinking Vision baseline; 3.3 GB
+false	qwen3-vl:8b-instruct	vision	standard	false	Stronger no-thinking Vision comparison
+false	qwen3-vl:8b-thinking	vision	standard	false	Stronger thinking Vision comparison

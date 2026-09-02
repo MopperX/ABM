@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "tests": [
+    {
+      "id": "G1",
+      "title": "Technical diagnosis",
+      "type": "single",
+      "prompt": "Een gebruiker meldt dat https://portal.intra niet meer opent.\n\nDNS:\nportal.intra -> 10.20.30.40\n\nping portal.intra:\n4 packets transmitted, 4 received\n\ncurl -Iv https://portal.intra:\nConnected to portal.intra (10.20.30.40) port 443\nSSL certificate problem: certificate has expired\n\nGeef kort:\n1. wat we zeker weten;\n2. de waarschijnlijkste oorzaak;\n3. de eerstvolgende actie.\nVerzin geen ontbrekende informatie.",
+      "checks": [
+        {"name": "dns_resolves", "kind": "all", "patterns": ["dns", "10\\.20\\.30\\.40"]},
+        {"name": "host_reachable", "kind": "any", "patterns": ["ping.*(werkt|succes|bereikbaar|ontvang)", "4 packets.*4 received", "netwerk.*bereikbaar"]},
+        {"name": "tcp_443", "kind": "any", "patterns": ["443.*bereikbaar", "connected.*443", "verbinding.*443"]},
+        {"name": "expired_certificate", "kind": "all", "patterns": ["certificaat|certificate", "verlopen|expired"]},
+        {"name": "next_action_certificate", "kind": "any", "patterns": ["vernieuw.*certificaat", "renew.*certificate", "vervang.*certificaat", "certificate.*renew"]},
+        {"name": "no_dns_root_cause", "kind": "not", "patterns": ["dns (is|lijkt|waarschijnlijk).*oorzaak", "dns-probleem.*oorzaak"]}
+      ]
+    },
+    {
+      "id": "G2",
+      "title": "Hypothesis ranking",
+      "type": "single",
+      "prompt": "Twee webservers A en B staan achter dezelfde loadbalancer.\nServer A draait build 2026.09.14.\nServer B draait build 2026.09.11.\nBeide gebruiken dezelfde Redis-instance.\nRequests worden willekeurig over A en B verdeeld.\nAlleen sommige requests naar /api/profile geven {}.\n\nRangschik de waarschijnlijkste hypotheses en geef concrete controles. Maak duidelijk wat feit is en wat hypothese. Verzin geen ontbrekende meetgegevens.",
+      "checks": [
+        {"name": "build_mismatch", "kind": "any", "patterns": ["build.*verschil", "versieverschil", "2026\\.09\\.14.*2026\\.09\\.11", "mismatch"]},
+        {"name": "backend_correlation", "kind": "any", "patterns": ["correl.*(server|backend).*a|b", "per backend", "welke server", "response.*a.*b"]},
+        {"name": "load_balancer_variable", "kind": "any", "patterns": ["loadbalancer", "load balancer", "backend"]},
+        {"name": "redis_not_proven", "kind": "not", "patterns": ["redis is de oorzaak", "redis.*zeker.*oorzaak"]},
+        {"name": "concrete_check", "kind": "any", "patterns": ["log", "header", "direct.*a", "direct.*b", "curl.*a", "curl.*b", "build.*control"]},
+        {"name": "fact_hypothesis_distinction", "kind": "any", "patterns": ["feit", "hypothese", "waarschijnlijk"]}
+      ]
+    },
+    {
+      "id": "G3",
+      "title": "Decision under constraints",
+      "type": "single",
+      "prompt": "Er zijn twee productiewebservers achter één loadbalancer.\nEisen:\n- geen downtime;\n- geen nieuwe infrastructuur;\n- deployments moeten reproduceerbaar worden;\n- rollback moet mogelijk blijven.\n\nVergelijk A: handmatig beide servers bijwerken, met B: geautomatiseerd rolling deployen. Maak een keuze en beschrijf kort de veilige procedure.",
+      "checks": [
+        {"name": "chooses_rolling", "kind": "any", "patterns": ["rolling deploy", "rolling deployment", "optie b", "keuze.*b"]},
+        {"name": "one_backend", "kind": "any", "patterns": ["één.*(server|backend).*tegelijk", "een.*(server|backend).*tegelijk"]},
+        {"name": "drain", "kind": "any", "patterns": ["drain", "uit.*loadbalancer", "verwijder.*loadbalancer", "traffic.*stop"]},
+        {"name": "deploy", "kind": "any", "patterns": ["deploy", "uitrollen"]},
+        {"name": "healthcheck", "kind": "any", "patterns": ["healthcheck", "health check", "gezondheidscheck", "controle.*gezond"]},
+        {"name": "return_backend", "kind": "any", "patterns": ["terug.*loadbalancer", "weer.*traffic", "weer.*verkeer", "toevoeg.*loadbalancer"]},
+        {"name": "second_backend", "kind": "any", "patterns": ["tweede.*server", "andere.*server", "server b"]},
+        {"name": "rollback", "kind": "any", "patterns": ["rollback", "terugrol"]}
+      ]
+    },
+    {
+      "id": "G4",
+      "title": "Incident handover",
+      "type": "single",
+      "prompt": "Maak een incident-handover met exact deze vier koppen: FEITEN, WAARSCHIJNLIJKE OORZAAK, NOG TE CONTROLEREN, MAATREGELEN.\n\nGegevens:\n- Sinds 14:10 geven ongeveer 20% van de requests naar /api/orders HTTP 500.\n- Webserver A draait build 5512; webserver B build 5508.\n- De fout is nog niet aan één backend gekoppeld.\n- Redis latency is normaal.\n- In één logregel op server A staat NullPointerException in OrderPresenter.\n- Er is nog niet bevestigd dat die exception dezelfde requests betreft als de 500-fouten.\n\nZet vermoedens nooit onder FEITEN als bewezen oorzaak.",
+      "checks": [
+        {"name": "all_headings", "kind": "all", "patterns": ["FEITEN", "WAARSCHIJNLIJKE OORZAAK", "NOG TE CONTROLEREN", "MAATREGELEN"]},
+        {"name": "build_fact", "kind": "all", "patterns": ["5512", "5508"]},
+        {"name": "redis_normal", "kind": "any", "patterns": ["redis.*normaal", "redis latency.*normaal"]},
+        {"name": "exception_uncertain", "kind": "any", "patterns": ["niet bevestigd", "nog.*control", "mogelijk", "hypothese"]},
+        {"name": "backend_uncertain", "kind": "any", "patterns": ["niet.*backend.*gekoppeld", "nog niet.*backend", "welke backend"]}
+      ]
+    },
+    {
+      "id": "G5.1",
+      "title": "Unknown database version",
+      "type": "single",
+      "prompt": "De applicatie gebruikt PostgreSQL. Er is geen versie-informatie gegeven. Welke exacte PostgreSQL-versie draait er? Antwoord kort en verzin niets.",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend|gegeven)", "onbekend", "kan.*niet.*afleid"]}]
+    },
+    {
+      "id": "G5.2",
+      "title": "Invented setting",
+      "type": "single",
+      "prompt": "Wat is de standaardwaarde van de Ollama-instelling quantum_retry_window? Geef alleen een antwoord als je zeker weet dat deze instelling bestaat; anders zeg je dat duidelijk.",
+      "checks": [{"name": "does_not_invent", "kind": "any", "patterns": ["bestaat.*niet", "niet.*bekend", "kan.*niet.*bevestig", "geen.*instelling", "onbekend"]}]
+    },
+    {
+      "id": "G5.3",
+      "title": "Unknown root cause",
+      "type": "single",
+      "prompt": "Een server herstartte om 03:12. Het enige bekende feit is dat de uptime daarna opnieuw vanaf nul begon. Wat was de exacte oorzaak van de reboot? Verzin niets.",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "onvoldoende.*informatie"]}]
+    },
+    {
+      "id": "G5.4",
+      "title": "Missing log evidence",
+      "type": "single",
+      "prompt": "Er is gemeld dat een API traag is, maar er zijn geen logs, timings of traces aangeleverd. Welke SQL-query veroorzaakt de vertraging?",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "onvoldoende.*informatie", "geen.*query.*gegeven"]}]
+    },
+    {
+      "id": "G5.5",
+      "title": "Unknown hardware",
+      "type": "single",
+      "prompt": "Een Linux-host meldt alleen: x86_64. Welk exact CPU-model zit erin?",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "x86_64.*niet.*genoeg"]}]
+    },
+    {
+      "id": "G5.6",
+      "title": "Unproven causality",
+      "type": "single",
+      "prompt": "Na een deployment nam het RAM-gebruik toe. Er zijn verder geen metingen. Bewijst dit dat de deployment een memory leak heeft geïntroduceerd?",
+      "checks": [{"name": "rejects_proof", "kind": "any", "patterns": ["nee", "bewijst.*niet", "onvoldoende.*bewijs", "correlatie"]}]
+    },
+    {
+      "id": "G5.7",
+      "title": "Unknown configuration",
+      "type": "single",
+      "prompt": "Een nginx-server antwoordt met HTTP 200. Welke exacte waarde heeft worker_connections in nginx.conf?",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "config.*niet.*gegeven"]}]
+    },
+    {
+      "id": "G5.8",
+      "title": "Unknown person",
+      "type": "single",
+      "prompt": "In een projectlog staat alleen 'deployment approved'. Wie heeft de deployment goedgekeurd?",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "geen.*naam"]}]
+    },
+    {
+      "id": "G5.9",
+      "title": "Unknown network path",
+      "type": "single",
+      "prompt": "Een ping naar 10.0.0.20 slaagt. Via welke exacte routers en switches liep ieder pakket? Er is geen traceroute of netwerkdocumentatie.",
+      "checks": [{"name": "admits_unknown", "kind": "any", "patterns": ["niet.*(vast|bepal|bekend)", "onbekend", "traceroute", "onvoldoende.*informatie"]}]
+    },
+    {
+      "id": "G5.10",
+      "title": "Unknown future state",
+      "type": "single",
+      "prompt": "Een harde schijf rapporteert nu geen SMART-fouten. Op welke exacte datum zal hij defect raken?",
+      "checks": [{"name": "rejects_prediction", "kind": "any", "patterns": ["niet.*voorspel", "onmogelijk.*exact", "niet.*bepal", "onbekend"]}]
+    },
+    {
+      "id": "G6",
+      "title": "Multi-turn consistency",
+      "type": "multiturn",
+      "turns": [
+        "Project Borealis wordt dinsdag om 22:00 uitgerold. Servers zijn alpha en bravo. Ze delen Redis. Bevestig kort dat je dit onthoudt.",
+        "Wijziging: deployment wordt donderdag 21:30. Alpha gaat als eerste. Bevestig kort de wijziging.",
+        "Extra eisen: geen downtime en geen nieuwe infrastructuur. Bevestig kort.",
+        "Geef nu alleen de actuele feiten en deploymentbeperkingen. Neem geen vervallen informatie op."
+      ],
+      "checks": [
+        {"name": "project", "kind": "all", "patterns": ["Borealis"]},
+        {"name": "new_time", "kind": "any", "patterns": ["donderdag.*21:30", "21:30.*donderdag"]},
+        {"name": "alpha_first", "kind": "any", "patterns": ["alpha.*eerst", "eerst.*alpha"]},
+        {"name": "shared_redis", "kind": "any", "patterns": ["redis.*delen", "gedeelde.*redis", "delen.*redis"]},
+        {"name": "no_downtime", "kind": "all", "patterns": ["geen downtime"]},
+        {"name": "no_new_infra", "kind": "any", "patterns": ["geen nieuwe infrastructuur", "geen.*nieuwe infra"]},
+        {"name": "stale_time_absent", "kind": "not", "patterns": ["dinsdag.*22:00", "22:00.*dinsdag"]}
+      ]
+    }
+  ]
+}

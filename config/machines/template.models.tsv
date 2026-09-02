@@ -1,0 +1,21 @@
+# enabled	model	benchmarks	modes	web	notes
+true	qwen3:4b	core,rag,coding-agent	nothinking,thinking	true	Small general model
+true	qwen3:8b	core,rag,coding-agent	nothinking,thinking	false	General model
+false	qwen3:14b	core,rag,coding-agent	nothinking,thinking	false	Enable when suitable for this machine
+false	qwen3:30b-a3b	core,coding-agent,rag	nothinking,thinking	true	MoE model; edit benchmark list as needed
+false	qwen3:32b	core,rag,coding-agent	nothinking,thinking	false	Dense model
+false	qwen3.5:35b	core,rag,coding-agent	nothinking,thinking	false	Larger model
+false	qwen3.8:27b	core,coding-agent,rag,vision	nothinking,thinking	true	Web only used by web-enabled suites
+false	gpt-oss:20b	core,coding-agent,rag	low,medium,high	true	Reasoning effort variants
+false	llama3.3:70b-instruct-q3_K_M	core,rag	standard	false	Large comparison model
+false	qwen2.5-coder:3b	coding-agent	standard	false	Small coder
+false	qwen2.5-coder:7b	coding-agent	standard	false	Coder
+false	qwen2.5-coder:14b	coding-agent	standard	false	Coder
+false	qwen2.5-coder:32b	coding-agent	standard	false	Coder
+false	qwen3-coder:30b	coding-agent	standard	false	Agent/coding model
+false	qwen3-coder-next	coding-agent	standard	false	Large agentic coder
+false	qwen3.6:27b	core,coding-agent,rag,vision	nothinking,thinking	false	Current multimodal general model; enable when suitable
+true	qwen3-vl:4b-instruct	vision	standard	false	Official no-thinking Vision baseline; 3.3 GB
+true	qwen3-vl:4b-thinking	vision	standard	false	Official thinking Vision baseline; 3.3 GB
+false	qwen3-vl:8b-instruct	vision	standard	false	Stronger no-thinking Vision comparison
+false	qwen3-vl:8b-thinking	vision	standard	false	Stronger thinking Vision comparison

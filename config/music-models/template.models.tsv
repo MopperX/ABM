@@ -1,0 +1,4 @@
+# enabled	backend	model	revision	capabilities	guidance	top_k	temperature	notes
+true	transformers-musicgen	facebook/musicgen-small	f37b0c0576a5fb6891df4a25c80680af72c11e1e	text	3.0	250	1.0	Universal MusicGen baseline; ~300M parameters, CC-BY-NC-4.0
+false	transformers-musicgen	facebook/musicgen-melody	main	text,melody	3.0	250	1.0	Optional melody-conditioned MusicGen model; enable on machines with enough memory
+false	transformers-musicgen	facebook/musicgen-medium	main	text	3.0	250	1.0	Optional larger MusicGen model; AudioCraft documentation recommends >=16 GB GPU memory for medium models

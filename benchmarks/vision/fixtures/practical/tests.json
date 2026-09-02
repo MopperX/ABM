@@ -1,0 +1,173 @@
+{
+  "tests": [
+    {
+      "id": "V1",
+      "title": "Technical error diagnosis",
+      "image": "V1.png",
+      "prompt": "Analyseer deze foutpagina. Geef in maximaal drie bullets: (1) wat zichtbaar zeker is, (2) de meest directe technische oorzaak die uit de screenshot volgt, (3) één eerstvolgende controle. Verzin geen wachtwoord-, firewall- of servicestatus.",
+      "checks": [
+        {
+          "name": "database connection error",
+          "kind": "any",
+          "patterns": [
+            "database.*connection|SQLSTATE|connection refused|mysql"
+          ]
+        },
+        {
+          "name": "connection refused identified",
+          "kind": "any",
+          "patterns": [
+            "connection refused|verbinding.*geweigerd|weigert.*verbinding"
+          ]
+        },
+        {
+          "name": "no password overclaim",
+          "kind": "not",
+          "patterns": [
+            "verkeerd wachtwoord|wrong password|password is|credential.*incorrect"
+          ]
+        },
+        {
+          "name": "no firewall overclaim",
+          "kind": "not",
+          "patterns": [
+            "firewall blokkeert|firewall blocks|blocked by.*firewall"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2",
+      "title": "UI layout issue",
+      "image": "V2.png",
+      "prompt": "Wat is het belangrijkste zichtbare layoutprobleem in deze Projects-tabel? Noem het probleem en het element dat erdoor geraakt wordt.",
+      "checks": [
+        {
+          "name": "horizontal overflow or clipping",
+          "kind": "any",
+          "patterns": [
+            "overflow|buiten.*beeld|afgesneden|clipp|viewport|rechter.*rand"
+          ]
+        },
+        {
+          "name": "actions affected",
+          "kind": "any",
+          "patterns": [
+            "Actions|actie"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V3",
+      "title": "Screenshot plus Blade/Livewire code",
+      "image": "V3.png",
+      "prompt": "De screenshot toont een Save-knop die visueel normaal is. Onderstaande Blade-code hoort bij die knop:\n\n<x-actions.button wire:click=\"save\" wire:loading=\"disabled\" wire:target=\"save\">Save</x-actions.button>\n\nVolgens de projectspecifieke Web Awesome-wrapper moet de knop tijdens save de loading-state krijgen. Welke concrete wijziging is nodig? Geef alleen de gecorrigeerde componentregel.",
+      "checks": [
+        {
+          "name": "wire loading attr loading",
+          "kind": "all",
+          "patterns": [
+            "wire:loading\\.attr=[\\\"']loading[\\\"']",
+            "wire:target=[\\\"']save[\\\"']"
+          ]
+        },
+        {
+          "name": "keeps wire click",
+          "kind": "any",
+          "patterns": [
+            "wire:click=[\\\"']save[\\\"']"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V4",
+      "title": "OCR technical logs",
+      "image": "V4.png",
+      "prompt": "Lees de screenshot exact. Geef uitsluitend: (a) de releasewaarde, (b) de Redis endpointwaarde, (c) het aantal reconnect-attempts dat in de WARN-regel staat. Formaat exact: RELEASE | ENDPOINT | ATTEMPT",
+      "checks": [
+        {
+          "name": "exact OCR tuple",
+          "kind": "any",
+          "patterns": [
+            "2026\\.09\\.02-3\\s*\\|\\s*10\\.20\\.0\\.15:6379\\s*\\|\\s*2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V5",
+      "title": "GUI grounding",
+      "image": "V5.png",
+      "prompt": "Je moet de knop 'Rotate key' voor de Production API aanklikken. Geef uitsluitend één JSON-object met pixelcoördinaten vanaf linksboven: {\"x\": integer, \"y\": integer}.",
+      "bbox": [
+        985,
+        242,
+        1170,
+        290
+      ],
+      "coordinate": true
+    },
+    {
+      "id": "V6",
+      "title": "Technical diagram reasoning",
+      "image": "V6.png",
+      "prompt": "Volgens het diagram: welke specifieke verbinding faalt? Antwoord met bron -> doel en noem de visuele aanwijzing.",
+      "checks": [
+        {
+          "name": "bravo to database",
+          "kind": "all",
+          "patterns": [
+            "bravo",
+            "database"
+          ]
+        },
+        {
+          "name": "red failing line",
+          "kind": "any",
+          "patterns": [
+            "rood|red|failing|timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V7",
+      "title": "Visual epistemic restraint",
+      "image": "V7.png",
+      "prompt": "Wat kun je uit deze monitoring-screenshot concluderen over de storing? Noem één zekerheid en vervolgens wat je NIET kunt vaststellen. Trek geen specifieke conclusie over credentials, firewall of database-service-status.",
+      "checks": [
+        {
+          "name": "database connection failure fact",
+          "kind": "any",
+          "patterns": [
+            "database connection failed|databaseverbinding.*mislukt|verbinding.*database.*mislukt"
+          ]
+        },
+        {
+          "name": "uncertainty stated",
+          "kind": "any",
+          "patterns": [
+            "niet.*vaststellen|onbekend|niet zichtbaar|geen informatie|niet te bepalen",
+            "niet.*vast.*stellen"
+          ]
+        },
+        {
+          "name": "no credentials overclaim",
+          "kind": "not",
+          "patterns": [
+            "credentials.*fout|wachtwoord.*fout|wrong password"
+          ]
+        },
+        {
+          "name": "no firewall overclaim",
+          "kind": "not",
+          "patterns": [
+            "firewall.*blokkeert|firewall.*oorzaak"
+          ]
+        }
+      ]
+    }
+  ]
+}

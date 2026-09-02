@@ -1,0 +1,42 @@
+{
+  "tests": [
+    {
+      "id": "W1",
+      "title": "Current release research",
+      "prompt": "Using current web information, determine the latest stable Ollama release/version available now. Prefer an official Ollama source and give the version plus release/publication date if the source provides one. Cite the exact URL(s) you used. Do not answer from memory.",
+      "checks": [
+        {"name": "mentions a version", "kind": "any", "patterns": ["\\bv?\\d+\\.\\d+(?:\\.\\d+)?\\b"]},
+        {"name": "uses an official Ollama source", "kind": "any", "patterns": ["https?://(?:www\\.)?ollama\\.com/", "https?://github\\.com/ollama/ollama/"]}
+      ],
+      "minimum_citations": 1,
+      "require_search": true,
+      "require_fetch": true
+    },
+    {
+      "id": "W2",
+      "title": "Current technical documentation",
+      "prompt": "Verify from the CURRENT official Ollama documentation how tool calling works with the local POST /api/chat endpoint. Explain the minimum request structure for defining one function tool and how a tool result is sent back into the conversation. Include a compact JSON example and cite the exact official documentation URL(s). Search and fetch the current documentation; do not rely on remembered syntax.",
+      "checks": [
+        {"name": "mentions api chat", "kind": "any", "patterns": ["/api/chat", "POST\\s+/api/chat"]},
+        {"name": "mentions tools", "kind": "any", "patterns": ["\\btools\\b", "tool[_ -]?call"]},
+        {"name": "mentions tool result role", "kind": "any", "patterns": ["role[^\\n]{0,30}tool", "\\\"role\\\"\\s*:\\s*\\\"tool\\\""]},
+        {"name": "cites official docs", "kind": "any", "patterns": ["https?://docs\\.ollama\\.com/"]}
+      ],
+      "minimum_citations": 1,
+      "require_search": true,
+      "require_fetch": true
+    },
+    {
+      "id": "W3",
+      "title": "Multi-source current research",
+      "prompt": "Research the CURRENT minimum NPU TOPS requirement used by Microsoft for a Windows Copilot+ PC. Verify the number using a Microsoft source and at least one additional independent source if available. Explain briefly what that TOPS number refers to and mention any meaningful discrepancy between sources. Cite every URL used.",
+      "checks": [
+        {"name": "states the 40 TOPS class requirement", "kind": "any", "patterns": ["40\\s*\\+?\\s*TOPS", "40[^\\n]{0,40}TOPS"]},
+        {"name": "cites Microsoft", "kind": "any", "patterns": ["https?://(?:www\\.)?microsoft\\.com/", "https?://learn\\.microsoft\\.com/"]}
+      ],
+      "minimum_citations": 2,
+      "require_search": true,
+      "require_fetch": true
+    }
+  ]
+}
