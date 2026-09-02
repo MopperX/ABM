@@ -133,7 +133,7 @@ def synthesize(tts:Any,text:str,sid:int,out:Path)->dict[str,Any]:
     import sherpa_onnx
     cfg=sherpa_onnx.GenerationConfig();cfg.sid=sid;cfg.speed=1.0;cfg.silence_scale=.2
     sampler=PowerSampler(interval=.5);sampler.start();start=time.monotonic();audio=tts.generate(text,cfg);elapsed=time.monotonic()-start;power=sampler.stop(elapsed)
-    if len(audio.samples)==0:raise RuntimeError('TTS genereerde geen audio')
+    if len(audio.samples)==0:raise RuntimeError('TTS generated no audio')
     out.parent.mkdir(parents=True,exist_ok=True);sf.write(out,audio.samples,audio.sample_rate,subtype='PCM_16')
     dur=len(audio.samples)/float(audio.sample_rate)
     return {'seconds':elapsed,'audio_seconds':dur,'real_time_factor':elapsed/max(.001,dur),'generated_audio_seconds_per_second':dur/max(.001,elapsed),'sample_rate':int(audio.sample_rate),'samples':len(audio.samples),'power':power}
@@ -209,7 +209,7 @@ def run_speech(*,repo_root:Path,run_dir:Path,speech_config:Path,profile:str,is_c
         if cfg['kind']!='stt':continue
         model_path=stt_paths.get(cfg['model']);rows=[];ext=[];base=run_dir/'raw/speech/stt'/cfg['id']
         if not model_path or not model_path.exists():
-            raise RuntimeError(f"Whisper-model ontbreekt uit preflight: {cfg['model']}")
+            raise RuntimeError(f"Whisper model is missing from preflight: {cfg['model']}")
         for tid in STT_PRACTICAL[profile]:
             if should_stop():return {'stopped':True,**results}
             key=f"speech|stt|{cfg['id']}|practical|{tid}";path=base/'practical'/f'{tid}.json'
@@ -232,7 +232,7 @@ def run_speech(*,repo_root:Path,run_dir:Path,speech_config:Path,profile:str,is_c
     for cfg in configs:
         if cfg['kind']!='tts':continue
         asset=prep['tts_assets'].get(cfg['model']);base=run_dir/'raw/speech/tts'/cfg['id'];rows=[]
-        if not asset:raise RuntimeError(f"TTS asset ontbreekt: {cfg['model']}")
+        if not asset:raise RuntimeError(f"TTS asset is missing: {cfg['model']}")
         try:
             set_current({'benchmark':'speech','model':cfg['id'],'mode':'tts','test':'load-model','repeat':1,'repeats':1});tts,provider,load_s=load_tts(asset)
         except Exception as e:

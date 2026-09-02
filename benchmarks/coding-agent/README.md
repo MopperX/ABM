@@ -35,7 +35,7 @@ For each agent task the raw output includes the complete tool transcript, final 
 |---|---|---|
 | quick | C1,C2,C4,C6,C8,C9 ×1 | A1,A5 ×1 |
 | standard | C1–C9 ×3 | A1–A5 ×1 |
-| full | C1–C9 ×3 | A1–A5 ×3 |
+| full | C1–C9 ×5 | A1–A5 ×5 |
 
 
 ## Reasoning modes

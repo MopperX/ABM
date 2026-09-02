@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PY="$ROOT/.venv/bin/python"
 PIP="$ROOT/.venv/bin/pip"
-[[ -x "$PY" ]] || { echo "FOUT: basis virtualenv ontbreekt; voer ./bootstrap.sh uit." >&2; exit 1; }
+[[ -x "$PY" ]] || { echo "ERROR: base virtual environment is missing; run ./bootstrap.sh." >&2; exit 1; }
 
 if ! "$PY" -c 'import pypdf' >/dev/null 2>&1; then
   echo "RAG dependency installeren: pypdf"
@@ -18,7 +18,7 @@ else
   echo "RAG embeddingmodel aanwezig: $EMBED_MODEL"
 fi
 
-CACHE="${BENCH_CACHE_DIR:?BENCH_CACHE_DIR ontbreekt}/beir"
+CACHE="${BENCH_CACHE_DIR:?BENCH_CACHE_DIR is missing}/beir"
 DATA="$CACHE/scifact"
 ZIP="$CACHE/scifact.zip"
 mkdir -p "$CACHE"

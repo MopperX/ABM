@@ -49,7 +49,7 @@ def _docker_prefix() -> list[str]:
         return []
     if os.name == "posix" and subprocess.run(["sh","-lc","command -v sg >/dev/null 2>&1 && sg docker -c 'docker info >/dev/null 2>&1'"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
         return ["sg","docker","-c"]
-    raise RuntimeError("Docker sandbox is niet toegankelijk voor de benchmarkgebruiker. Voer de LiveCodeBench-preflight opnieuw uit.")
+    raise RuntimeError("The Docker sandbox is not accessible to the benchmark user. Run the LiveCodeBench preflight again.")
 
 
 def _parse_report(output: Path) -> tuple[Path, dict[str,Any]]:
@@ -78,7 +78,7 @@ def run_livecodebench(
 
     exe=repo_root/".venv-lcb/bin/evalscope"
     if not exe.exists():
-        raise RuntimeError("EvalScope ontbreekt; LiveCodeBench dependency-preflight is niet uitgevoerd.")
+        raise RuntimeError("EvalScope is missing; the LiveCodeBench dependency preflight was not run.")
 
     attempt=_next_attempt(base)
     output=attempt/"evalscope"

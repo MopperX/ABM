@@ -9,7 +9,7 @@ log() { printf '\n==> %s\n' "$*"; }
 
 install_homebrew() {
   if command -v brew >/dev/null 2>&1; then return; fi
-  log "Homebrew ontbreekt; installeren"
+  log "Homebrew is missing; installing"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -20,7 +20,7 @@ install_homebrew() {
 
 if [[ "$OS" == "Linux" ]]; then
   if ! command -v apt-get >/dev/null 2>&1; then
-    echo "FOUT: momenteel worden Linux-systemen met apt (Ubuntu/Debian/WSL) ondersteund." >&2
+    echo "ERROR: Linux systems with apt (Ubuntu/Debian/WSL) are currently supported." >&2
     exit 1
   fi
   log "Basisdependencies installeren via apt"
@@ -46,7 +46,7 @@ elif [[ "$OS" == "Darwin" ]]; then
   $SUDO mkdir -p "$RESULTS_ROOT/runs" "$RESULTS_ROOT/logs" "$RESULTS_ROOT/cache"
   $SUDO chown -R "$(id -u):$(id -g)" "$RESULTS_ROOT"
 else
-  echo "FOUT: ondersteund: Ubuntu/Debian, Ubuntu onder WSL, macOS." >&2
+  echo "ERROR: supported platforms are Ubuntu/Debian, Ubuntu on WSL, and macOS." >&2
   exit 1
 fi
 

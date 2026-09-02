@@ -117,7 +117,22 @@ def parse_action(text: str) -> dict[str, Any] | None:
     return None
 
 
-def run_fixture_tests(workspace: Path, timeout: int = 60) -> tuple[int, str, str]:
+def run_public_tests(workspace: Path, timeout: int = 60) -> tuple[int, str, str]:
+    """Run tests visible to the agent. Hidden evaluator output must never enter the conversation."""
+    candidates = [
+        (["python3", "test.py"], workspace / "test.py"),
+        (["bash", "test.sh"], workspace / "test.sh"),
+        (["python3", "-m", "pytest", "-q", "tests"], workspace / "tests"),
+    ]
+    for cmd, marker in candidates:
+        if marker.exists():
+            cp = _run(cmd, workspace, timeout=timeout)
+            return cp.returncode, cp.stdout, cp.stderr
+    return 0, "No public tests are provided for this fixture. Hidden evaluation runs only after finish.\n", ""
+
+
+def run_hidden_evaluation(workspace: Path, timeout: int = 60) -> tuple[int, str, str]:
+    """Run the hidden final evaluator after the agent session has ended."""
     workspace = workspace.resolve()
     test_py=workspace/".benchmark"/"test.py"
     test_sh=workspace/".benchmark"/"test.sh"
@@ -223,7 +238,7 @@ def execute_tool(workspace: Path, action: dict[str, Any]) -> tuple[str, bool]:
             return f"REPLACED in {rel}", True
 
         if tool == "run_tests":
-            rc,out,err=run_fixture_tests(workspace)
+            rc,out,err=run_public_tests(workspace)
             return f"EXIT={rc}\nSTDOUT:\n{out}\nSTDERR:\n{err}", True
 
         if tool == "git_diff":
@@ -332,7 +347,7 @@ def run_agent_task(
         return AgentRunResult(stopped=True,passed=False,exit_code=-1,stdout="",stderr="",steps=steps,tool_calls=tool_calls,test_runs=test_runs,
             files_changed=files,diff=diff,diff_added_lines=added,diff_removed_lines=removed,final_message=final_message,raw_dir=str(raw_dir))
 
-    rc,out,err=run_fixture_tests(workspace)
+    rc,out,err=run_hidden_evaluation(workspace)
     diff=git_diff(workspace)
     files=changed_files(workspace)
     added,removed=count_diff_lines(diff)

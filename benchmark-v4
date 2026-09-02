@@ -16,8 +16,8 @@ usage() {
   cat <<'TXT'
 AI Benchmark v4
 
-Gebruik:
-  ./benchmark-v4                         interactieve checklist
+Usage:
+  ./benchmark-v4                         interactive checklist
   ./benchmark-v4 start all [opties]
   ./benchmark-v4 start core rag vision [opties]
   ./benchmark-v4 status [run-id]
@@ -25,13 +25,13 @@ Gebruik:
   ./benchmark-v4 resume [run-id]
   ./benchmark-v4 list-runs
 
-Opties bij start:
+Start options:
   --profile quick|standard|full
-  --machine NAME       gebruikt config/machines/NAME.models.tsv
-  --with-livecodebench  voeg geïsoleerde externe LiveCodeBench toe aan Coding & Agent
+  --machine NAME       use config/machines/NAME.models.tsv
+  --with-livecodebench  add the isolated external LiveCodeBench suite
 
 Environment:
-  BENCH_RESULTS_DIR    override persistente resultaatmap
+  BENCH_RESULTS_DIR    override the persistent results directory
 TXT
 }
 
@@ -58,7 +58,7 @@ for p in root.glob('*/*') if root.exists() else []:
         print(p); break
 PY
 )"
-  [[ -n "$found" ]] || { echo "FOUT: run niet gevonden: $id" >&2; exit 1; }
+  [[ -n "$found" ]] || { echo "ERROR: run not found: $id" >&2; exit 1; }
   echo "$found"
 }
 
@@ -66,8 +66,8 @@ find_machine_config() {
   local name="$1"
   local path="$ROOT/config/machines/$name.models.tsv"
   [[ -f "$path" ]] || {
-    echo "FOUT: machineconfig ontbreekt: $path" >&2
-    echo "Beschikbaar:" >&2
+    echo "ERROR: machine configuration is missing: $path" >&2
+    echo "Available:" >&2
     local f base
     for f in "$ROOT"/config/machines/*.models.tsv; do
       [[ -e "$f" ]] || continue
@@ -81,12 +81,12 @@ find_machine_config() {
 
 interactive() {
   command -v dialog >/dev/null 2>&1 || {
-    echo "dialog ontbreekt. Voer eerst ./bootstrap.sh uit, of gebruik de CLI-modus." >&2
+    echo "dialog is missing. Run ./bootstrap.sh first, or use CLI mode." >&2
     exit 1
   }
   local choices profile machine
-  choices=$(dialog --stdout --separate-output --checklist "Selecteer benchmarks (spatie = aan/uit)" 20 72 10 \
-    all "ALL - alle benchmarks" off \
+  choices=$(dialog --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 10 \
+    all "ALL - all benchmarks" off \
     core "Core LLM" on \
     coding-agent "Coding & Agent" off \
     rag "RAG / Documents" off \
@@ -95,11 +95,11 @@ interactive() {
     speech "Speech & Audio" off \
     music "Music Generation" off \
     web "Web / Research (local SearXNG)" off) || exit 0
-  [[ -n "$choices" ]] || { echo "Geen benchmarks geselecteerd."; exit 0; }
+  [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
   if grep -qx all <<<"$choices"; then
     choices=$(printf '%s\n' "${BENCHES[@]}")
   fi
-  profile=$(dialog --stdout --radiolist "Profiel" 12 55 4 quick "Snelle controle" off standard "Officiële vergelijking" on full "Volledige externe sets" off) || exit 0
+  profile=$(dialog --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
   local configs=() f name
   for f in "$ROOT"/config/machines/*.models.tsv; do
     [[ -e "$f" ]] || continue
@@ -107,10 +107,10 @@ interactive() {
     [[ "$name" == "template" ]] && continue
     configs+=("$name" "$f" off)
   done
-  machine=$(dialog --stdout --radiolist "Machineconfig" 18 76 10 "${configs[@]}") || exit 0
+  machine=$(dialog --stdout --radiolist "Machine configuration" 18 76 10 "${configs[@]}") || exit 0
   local with_lcb=0
   if grep -qx coding-agent <<<"$choices"; then
-    if dialog --yesno "Ook de externe LiveCodeBench-laag draaien?\n\nDeze installeert een container-sandbox en is zwaarder dan de praktische Coding & Agent-tests." 11 72; then
+    if dialog --yesno "Also run the external LiveCodeBench layer?\n\nIt uses a container sandbox and is heavier than the practical Coding & Agent tests." 11 72; then
       with_lcb=1
     fi
   fi
@@ -132,36 +132,36 @@ start_run() {
       --profile) profile="$2"; shift 2 ;;
       --machine) machine="$2"; shift 2 ;;
       --with-livecodebench) with_lcb=1; shift ;;
-      --*) echo "Onbekende optie: $1" >&2; exit 2 ;;
+      --*) echo "Unknown option: $1" >&2; exit 2 ;;
       *) selected+=("$1"); shift ;;
     esac
   done
-  [[ "$profile" =~ ^(quick|standard|full)$ ]] || { echo "FOUT: ongeldig profiel: $profile" >&2; exit 2; }
+  [[ "$profile" =~ ^(quick|standard|full)$ ]] || { echo "ERROR: invalid profile: $profile" >&2; exit 2; }
   if ((${#selected[@]}==0)); then selected=(core); fi
   if [[ " ${selected[*]} " == *" all "* ]]; then selected=("${BENCHES[@]}"); fi
   local b
   for b in "${selected[@]}"; do
-    [[ " ${BENCHES[*]} " == *" $b "* ]] || { echo "FOUT: onbekende benchmark: $b" >&2; exit 2; }
+    [[ " ${BENCHES[*]} " == *" $b "* ]] || { echo "ERROR: unknown benchmark: $b" >&2; exit 2; }
   done
   if [[ -z "$machine" ]]; then
     machine="$(hostname -s 2>/dev/null || hostname)"
     [[ -f "$ROOT/config/machines/$machine.models.tsv" ]] || {
-      echo "FOUT: geen machineconfig voor hostname '$machine'. Gebruik --machine NAME." >&2
+      echo "ERROR: no machine configuration for hostname '$machine'. Use --machine NAME." >&2
       exit 2
     }
   fi
   local machine_config; machine_config="$(find_machine_config "$machine")"
   [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
-    echo "FOUT: resultaatmap ontbreekt of is niet schrijfbaar: $RESULTS_ROOT" >&2
-    echo "Voer eerst ./bootstrap.sh uit." >&2
+    echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
+    echo "Run ./bootstrap.sh first." >&2
     exit 1
   }
   local selected_csv; selected_csv="$(IFS=,; echo "${selected[*]}")"
 
   if ((with_lcb)) && [[ " $selected_csv " != *"coding-agent"* ]]; then
-    echo "FOUT: --with-livecodebench vereist dat coding-agent is geselecteerd." >&2; exit 2
+    echo "ERROR: --with-livecodebench requires coding-agent to be selected." >&2; exit 2
   fi
-  echo "Preflight: dependencies, Ollama en modellen controleren..."
+  echo "Preflight: checking dependencies, Ollama, and models..."
   "$ROOT/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
 
   local run_id run_dir now
@@ -258,21 +258,21 @@ PY
   echo "$pid" > "$run_dir/launcher.pid"
   sleep 0.5
   echo
-  echo "Run gestart: $run_id"
+  echo "Run started: $run_id"
   echo "Machine:     $machine"
   echo "Benchmarks:  $selected_csv"
   echo "Profile:     $profile"
   ((with_lcb)) && echo "LiveCodeBench: enabled (sandboxed)"
-  echo "Resultaten:  $run_dir"
+  echo "Results:     $run_dir"
   echo
-  echo "SSH/terminal mag nu worden afgesloten."
+  echo "The SSH session or terminal may now be closed."
   echo "Status: ./benchmark-v4 status $run_id"
   echo "Stop:   ./benchmark-v4 stop $run_id"
 }
 
 show_status() {
   local run_dir; run_dir="$(resolve_run "${1:-}")"
-  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
   "$PY" - "$run_dir/state.json" <<'PY'
 import json,sys
 s=json.load(open(sys.argv[1]))
@@ -328,8 +328,8 @@ resume_run() {
       original_commit="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_commit") or "")' "$source_file")"
       current_commit="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
       if [[ -n "$original_commit" && -n "$current_commit" && "$original_commit" != "$current_commit" ]]; then
-        echo "FOUT: oude run zonder bron-snapshot begon op Git commit $original_commit maar de repository staat nu op $current_commit." >&2
-        echo "Checkout eerst de oorspronkelijke commit of start een nieuwe run." >&2
+        echo "ERROR: the old run without a source snapshot started at Git commit $original_commit, but the repository is now at $current_commit." >&2
+        echo "Check out the original commit or start a new run." >&2
         exit 1
       fi
     fi
@@ -358,7 +358,7 @@ resume_run() {
   "$PY" - "$run_dir/state.json" <<'PY'
 import json,sys
 p=sys.argv[1]; s=json.load(open(p));
-if s.get('status')=='completed': raise SystemExit('FOUT: deze run is al completed.')
+if s.get('status')=='completed': raise SystemExit('ERROR: this run is already completed.')
 s['status']='resuming'; s.pop('error',None); open(p,'w').write(json.dumps(s,indent=2)+'\n')
 PY
   local log="$run_dir/benchmark.log"

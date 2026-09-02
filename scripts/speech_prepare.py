@@ -109,7 +109,7 @@ def ensure_whisper_cpp(cache: Path, stt_models: list[str]) -> dict[str, Any]:
         cmake_args += ["-DGGML_CUDA=ON"]
         backend = "cuda"
     elif shutil.which("nvidia-smi"):
-        print("WAARSCHUWING: NVIDIA GPU gevonden maar nvcc ontbreekt; whisper.cpp gebruikt CPU. Installeer een CUDA toolkit om STT-CUDA te benchmarken.", flush=True)
+        print("WARNING: an NVIDIA GPU was found but nvcc is missing; whisper.cpp will use CPU. Install a CUDA toolkit to benchmark STT on CUDA.", flush=True)
     run(cmake_args)
     run(["cmake", "--build", str(build), "--config", "Release", "-j", str(max(1, min(os.cpu_count() or 2, 12)))])
     cli = build / "bin" / "whisper-cli"
@@ -186,7 +186,7 @@ def _write_audio_bytes(audio_obj: dict[str, Any], out: Path) -> None:
         elif path and Path(path).exists():
             shutil.copy2(path, source)
         else:
-            raise RuntimeError("FLEURS audio bevat geen bruikbare bytes/path")
+            raise RuntimeError("FLEURS audio contains no usable bytes or path")
         run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(source), "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(out)])
 
 
@@ -257,7 +257,7 @@ def synth(model: dict[str, str], text: str, out: Path, sid: int = 0, provider: s
     gen_cfg = sherpa_onnx.GenerationConfig(); gen_cfg.sid = sid; gen_cfg.speed = 1.0; gen_cfg.silence_scale = 0.2
     audio = tts.generate(text, gen_cfg)
     if len(audio.samples) == 0:
-        raise RuntimeError("TTS genereerde geen samples")
+        raise RuntimeError("TTS generated no samples")
     out.parent.mkdir(parents=True, exist_ok=True)
     sf.write(out, audio.samples, audio.sample_rate, subtype="PCM_16")
     return {"provider": used, "sample_rate": int(audio.sample_rate), "samples": len(audio.samples), "duration_s": len(audio.samples) / float(audio.sample_rate)}

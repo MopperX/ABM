@@ -15,7 +15,7 @@ REVISION="d226b78bc"
 mkdir -p "$CACHE"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  command -v brew >/dev/null 2>&1 || { echo "FOUT: Homebrew ontbreekt; voer ./bootstrap.sh uit." >&2; exit 1; }
+  command -v brew >/dev/null 2>&1 || { echo "ERROR: Homebrew is missing; run ./bootstrap.sh." >&2; exit 1; }
   for pkg in libxml2 libxslt openssl@3; do
     brew list "$pkg" >/dev/null 2>&1 || brew install "$pkg"
   done
@@ -79,7 +79,7 @@ for port in range(18888,18899):
     finally:
         s.close()
 else:
-    raise SystemExit('FOUT: geen vrije SearXNG benchmarkpoort 18888-18898')
+    raise SystemExit('ERROR: no free SearXNG benchmark port in range 18888-18898')
 PY
 )"
 fi
@@ -121,7 +121,7 @@ if ! valid_search; then
     sleep 1
   done
 fi
-valid_search || { echo "FOUT: lokale SearXNG is niet bruikbaar; zie $LOG" >&2; exit 1; }
+valid_search || { echo "ERROR: local SearXNG is unusable; see $LOG" >&2; exit 1; }
 
 "$PY" - "$PREPARED" "$URL" "$PORT" "$RESOLVED" "$SRC" "$SETTINGS" <<'PY'
 import json,sys

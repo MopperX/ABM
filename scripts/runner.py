@@ -15,9 +15,11 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from lib.benchlib import (  # noqa: E402
     BENCHMARKS,
+    PowerSampler,
     atomic_json,
     host_snapshot,
     load_json,
+    ollama_model_identity,
     parse_defaults,
     parse_machine_models,
     utc_now,
@@ -78,10 +80,41 @@ def main() -> int:
     if not metadata_path.exists():
         atomic_json(metadata_path, host_snapshot())
 
+    idle_path = run_dir / "raw" / "hardware" / "idle-gpu.json"
+    if not idle_path.exists():
+        idle_sampler = PowerSampler(interval=0.5)
+        idle_sampler.start()
+        idle_started = time.monotonic()
+        time.sleep(30)
+        idle_elapsed = time.monotonic() - idle_started
+        atomic_json(idle_path, {
+            "duration_seconds": idle_elapsed,
+            "measurement": idle_sampler.stop(idle_elapsed),
+            "captured_at": utc_now(),
+        })
+
     models = parse_machine_models(machine_config)
     selected = state["selected_benchmarks"]
     profile = state["profile"]
     include_livecodebench = bool(state.get("with_livecodebench", False))
+
+    model_identity_path = run_dir / "raw" / "models" / "ollama.json"
+    identities = {}
+    api = defaults.get("OLLAMA_API", "http://127.0.0.1:11434")
+    relevant_models = [
+        mc for mc in models
+        if any(suite in selected for suite in mc.benchmarks)
+        and not (set(mc.benchmarks).intersection(selected) == {"web"} and not mc.web)
+    ]
+    for model_name in dict.fromkeys(mc.model for mc in relevant_models):
+        identities[model_name] = ollama_model_identity(api, model_name)
+    if model_identity_path.exists():
+        original = load_json(model_identity_path)
+        changed = [name for name, item in identities.items() if (original.get(name) or {}).get("digest") != item.get("digest")]
+        if changed:
+            raise RuntimeError("Ollama model digest changed since this run started: " + ", ".join(changed))
+    else:
+        atomic_json(model_identity_path, identities)
 
     # Planned jobs are model/mode/test invocations. Multiturn calls are reflected in live current state,
     # while completion percentage is based on logical test repeats so resume remains stable.

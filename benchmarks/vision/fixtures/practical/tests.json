@@ -4,7 +4,7 @@
       "id": "V1",
       "title": "Technical error diagnosis",
       "image": "V1.png",
-      "prompt": "Analyseer deze foutpagina. Geef in maximaal drie bullets: (1) wat zichtbaar zeker is, (2) de meest directe technische oorzaak die uit de screenshot volgt, (3) één eerstvolgende controle. Verzin geen wachtwoord-, firewall- of servicestatus.",
+      "prompt": "Analyze this error page. In at most three bullets state: (1) what is visibly certain, (2) the most direct technical cause supported by the screenshot, and (3) one next check. Do not invent password, firewall, or service status.",
       "checks": [
         {
           "name": "database connection error",
@@ -17,21 +17,21 @@
           "name": "connection refused identified",
           "kind": "any",
           "patterns": [
-            "connection refused|verbinding.*geweigerd|weigert.*verbinding"
+            "connection refused|refused.*connection"
           ]
         },
         {
           "name": "no password overclaim",
           "kind": "not",
           "patterns": [
-            "verkeerd wachtwoord|wrong password|password is|credential.*incorrect"
+            "wrong password|password is|credential.*incorrect"
           ]
         },
         {
           "name": "no firewall overclaim",
           "kind": "not",
           "patterns": [
-            "firewall blokkeert|firewall blocks|blocked by.*firewall"
+            "firewall blocks|blocked by.*firewall"
           ]
         }
       ]
@@ -40,20 +40,20 @@
       "id": "V2",
       "title": "UI layout issue",
       "image": "V2.png",
-      "prompt": "Wat is het belangrijkste zichtbare layoutprobleem in deze Projects-tabel? Noem het probleem en het element dat erdoor geraakt wordt.",
+      "prompt": "What is the main visible layout problem in this Projects table? Name the problem and the affected element.",
       "checks": [
         {
           "name": "horizontal overflow or clipping",
           "kind": "any",
           "patterns": [
-            "overflow|buiten.*beeld|afgesneden|clipp|viewport|rechter.*rand"
+            "overflow|outside.*view|cut off|clipp|viewport|right.*edge"
           ]
         },
         {
           "name": "actions affected",
           "kind": "any",
           "patterns": [
-            "Actions|actie"
+            "Actions|action"
           ]
         }
       ]
@@ -62,7 +62,7 @@
       "id": "V3",
       "title": "Screenshot plus Blade/Livewire code",
       "image": "V3.png",
-      "prompt": "De screenshot toont een Save-knop die visueel normaal is. Onderstaande Blade-code hoort bij die knop:\n\n<x-actions.button wire:click=\"save\" wire:loading=\"disabled\" wire:target=\"save\">Save</x-actions.button>\n\nVolgens de projectspecifieke Web Awesome-wrapper moet de knop tijdens save de loading-state krijgen. Welke concrete wijziging is nodig? Geef alleen de gecorrigeerde componentregel.",
+      "prompt": "The screenshot shows a visually normal Save button. The Blade code below belongs to it:\n\n<x-actions.button wire:click=\"save\" wire:loading=\"disabled\" wire:target=\"save\">Save</x-actions.button>\n\nThe project-specific Web Awesome wrapper requires the button to receive the loading state while saving. What exact change is required? Return only the corrected component line.",
       "checks": [
         {
           "name": "wire loading attr loading",
@@ -85,7 +85,7 @@
       "id": "V4",
       "title": "OCR technical logs",
       "image": "V4.png",
-      "prompt": "Lees de screenshot exact. Geef uitsluitend: (a) de releasewaarde, (b) de Redis endpointwaarde, (c) het aantal reconnect-attempts dat in de WARN-regel staat. Formaat exact: RELEASE | ENDPOINT | ATTEMPT",
+      "prompt": "Read the screenshot exactly. Return only: (a) the release value, (b) the Redis endpoint, and (c) the reconnect attempt number in the WARN line. Exact format: RELEASE | ENDPOINT | ATTEMPT",
       "checks": [
         {
           "name": "exact OCR tuple",
@@ -100,7 +100,7 @@
       "id": "V5",
       "title": "GUI grounding",
       "image": "V5.png",
-      "prompt": "Je moet de knop 'Rotate key' voor de Production API aanklikken. Geef uitsluitend één JSON-object met pixelcoördinaten vanaf linksboven: {\"x\": integer, \"y\": integer}.",
+      "prompt": "Click the 'Rotate key' button for the Production API. Return exactly one JSON object with pixel coordinates from the top-left: {\"x\": integer, \"y\": integer}.",
       "bbox": [
         985,
         242,
@@ -113,7 +113,7 @@
       "id": "V6",
       "title": "Technical diagram reasoning",
       "image": "V6.png",
-      "prompt": "Volgens het diagram: welke specifieke verbinding faalt? Antwoord met bron -> doel en noem de visuele aanwijzing.",
+      "prompt": "According to the diagram, which specific connection fails? Answer with source -> destination and name the visual indication.",
       "checks": [
         {
           "name": "bravo to database",
@@ -127,7 +127,7 @@
           "name": "red failing line",
           "kind": "any",
           "patterns": [
-            "rood|red|failing|timeout"
+            "red|failing|timeout"
           ]
         }
       ]
@@ -136,35 +136,34 @@
       "id": "V7",
       "title": "Visual epistemic restraint",
       "image": "V7.png",
-      "prompt": "Wat kun je uit deze monitoring-screenshot concluderen over de storing? Noem één zekerheid en vervolgens wat je NIET kunt vaststellen. Trek geen specifieke conclusie over credentials, firewall of database-service-status.",
+      "prompt": "What can be concluded about the incident from this monitoring screenshot? State one certainty and then what cannot be determined. Do not draw a specific conclusion about credentials, the firewall, or database service status.",
       "checks": [
         {
           "name": "database connection failure fact",
           "kind": "any",
           "patterns": [
-            "database connection failed|databaseverbinding.*mislukt|verbinding.*database.*mislukt"
+            "database connection failed|connection.*database.*failed"
           ]
         },
         {
           "name": "uncertainty stated",
           "kind": "any",
           "patterns": [
-            "niet.*vaststellen|onbekend|niet zichtbaar|geen informatie|niet te bepalen",
-            "niet.*vast.*stellen"
+            "cannot.*determine|unknown|not visible|no information|cannot be established"
           ]
         },
         {
           "name": "no credentials overclaim",
           "kind": "not",
           "patterns": [
-            "credentials.*fout|wachtwoord.*fout|wrong password"
+            "credentials.*wrong|wrong password"
           ]
         },
         {
           "name": "no firewall overclaim",
           "kind": "not",
           "patterns": [
-            "firewall.*blokkeert|firewall.*oorzaak"
+            "firewall.*blocks|firewall.*cause"
           ]
         }
       ]

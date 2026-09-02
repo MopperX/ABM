@@ -17,7 +17,7 @@ TOP_K = 5
 PROFILES={
     "quick":{"tests":["R1","R3","R6"],"repeats":1,"beir_queries":5},
     "standard":{"tests":["R1","R2","R3","R4","R5","R6","R7"],"repeats":3,"beir_queries":20},
-    "full":{"tests":["R1","R2","R3","R4","R5","R6","R7"],"repeats":3,"beir_queries":None},
+    "full":{"tests":["R1","R2","R3","R4","R5","R6","R7"],"repeats":5,"beir_queries":None},
 }
 SYSTEM=(
     "Answer only from the supplied retrieved sources. Do not use outside knowledge. "
@@ -180,7 +180,7 @@ def prepare_beir_retrieval(*,run_dir:Path,profile:str,api:str,is_completed,mark_
     if is_completed(key) and path.exists(): return load_json(path)
     set_current({"benchmark":"rag","model":EMBED_MODEL,"mode":"retrieval","test":"BEIR-SciFact","repeat":1,"repeats":1})
     results_root=run_dir.parents[2]; data=results_root/"cache/beir/scifact"
-    if not (data/"corpus.jsonl").exists(): raise RuntimeError(f"BEIR SciFact cache ontbreekt: {data}; voer preflight opnieuw uit")
+    if not (data/"corpus.jsonl").exists(): raise RuntimeError(f"BEIR SciFact cache is missing: {data}; run preflight again")
     corpus,queries,qrels=_load_scifact(data); qids=_select_qids(qrels,PROFILES[profile]["beir_queries"])
     try:
         doc_vecs,index_meta=_embed(api,[d["text"] for d in corpus],should_stop=should_stop)
@@ -226,7 +226,7 @@ def _answer_result(answer:str, task:dict[str,Any]) -> tuple[list[dict[str,Any]],
 def run_rag_answers(*,repo_root:Path,run_dir:Path,model:str,mode:str,profile:str,api:str,temperature:float,seed:int,context:int,is_completed,mark_completed,should_stop,set_current) -> dict[str,Any]:
     gt=load_json(repo_root/"benchmarks/rag/fixtures/practical/ground_truth.json")
     index_path=run_dir/"raw/rag/retrieval/practical/index.json"
-    if not index_path.exists(): raise RuntimeError("RAG practical index ontbreekt; retrieval moet eerst worden voorbereid")
+    if not index_path.exists(): raise RuntimeError("RAG practical index is missing; retrieval must be prepared first")
     idx=load_json(index_path); docs=idx["docs"]; doc_vecs=idx["embeddings"]
     cfg=PROFILES[profile]; slug=(model+"__"+mode).replace("/","_").replace(":","_")
     base=run_dir/"raw/rag/answers"/slug; rows=[]

@@ -10,6 +10,9 @@ import subprocess
 import tempfile
 import time
 import threading
+import hashlib
+import math
+import statistics
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -136,6 +139,87 @@ def host_snapshot() -> dict[str, Any]:
     return snapshot
 
 
+def _json_request(url: str, payload: dict[str, Any] | None = None, timeout: float = 10) -> Any:
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    with request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def ollama_model_identity(api: str, model: str) -> dict[str, Any]:
+    """Capture the immutable and behavior-relevant identity of an installed model."""
+    tags = _json_request(api.rstrip("/") + "/api/tags")
+    candidates = [m for m in tags.get("models", []) if m.get("name") == model or m.get("model") == model]
+    if not candidates:
+        raise RuntimeError(f"Ollama model is not installed: {model}")
+    tag = candidates[0]
+    shown = _json_request(api.rstrip("/") + "/api/show", {"model": model, "verbose": False})
+    template = shown.get("template") or ""
+    parameters = shown.get("parameters") or ""
+    info = shown.get("model_info") or {}
+    model_context = next((v for k, v in info.items() if k.endswith(".context_length")), None)
+    return {
+        "model": model,
+        "digest": tag.get("digest"),
+        "size_bytes": tag.get("size"),
+        "modified_at": tag.get("modified_at"),
+        "details": tag.get("details") or shown.get("details"),
+        "capabilities": shown.get("capabilities"),
+        "model_context_length": model_context,
+        "model_info": info,
+        "template": template,
+        "template_sha256": hashlib.sha256(template.encode("utf-8")).hexdigest(),
+        "parameters": parameters,
+        "parameters_sha256": hashlib.sha256(parameters.encode("utf-8")).hexdigest(),
+        "captured_at": utc_now(),
+    }
+
+
+def ollama_runtime_snapshot(api: str, model: str) -> dict[str, Any] | None:
+    try:
+        data = _json_request(api.rstrip("/") + "/api/ps")
+        for item in data.get("models", []):
+            if item.get("name") == model or item.get("model") == model:
+                size = int(item.get("size") or 0)
+                size_vram = int(item.get("size_vram") or 0)
+                return {
+                    "model": model,
+                    "digest": item.get("digest"),
+                    "size_bytes": size or None,
+                    "size_vram_bytes": size_vram or None,
+                    "vram_fraction": (size_vram / size) if size else None,
+                    "allocated_context_length": item.get("context_length"),
+                    "details": item.get("details"),
+                    "captured_at": utc_now(),
+                }
+    except Exception:
+        return None
+    return None
+
+
+def wilson_interval(successes: int, total: int, z: float = 1.959963984540054) -> dict[str, float] | None:
+    if total <= 0:
+        return None
+    p = successes / total
+    denominator = 1 + z * z / total
+    center = (p + z * z / (2 * total)) / denominator
+    margin = z * math.sqrt((p * (1 - p) + z * z / (4 * total)) / total) / denominator
+    return {"level": 0.95, "low": max(0.0, center - margin), "high": min(1.0, center + margin)}
+
+
+def distribution_summary(values: Iterable[float]) -> dict[str, float | int | None]:
+    rows = [float(v) for v in values if v is not None]
+    if not rows:
+        return {"count": 0, "mean": None, "median": None, "minimum": None, "maximum": None, "standard_deviation": None, "coefficient_of_variation": None}
+    mean = statistics.mean(rows)
+    sd = statistics.stdev(rows) if len(rows) > 1 else 0.0
+    return {
+        "count": len(rows), "mean": mean, "median": statistics.median(rows),
+        "minimum": min(rows), "maximum": max(rows), "standard_deviation": sd,
+        "coefficient_of_variation": (sd / mean) if mean else None,
+    }
+
+
 def mode_to_think(mode: str) -> tuple[bool, Any]:
     m = mode.strip().lower()
     if m == "standard":
@@ -151,19 +235,29 @@ def mode_to_think(mode: str) -> tuple[bool, Any]:
 
 
 
-def _read_nvidia_power_w() -> float | None:
+def _read_nvidia_sample() -> dict[str, float] | None:
     try:
         out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=power.draw", "--format=csv,noheader,nounits"],
+            ["nvidia-smi", "--query-gpu=power.draw,temperature.gpu,utilization.gpu,clocks.sm,memory.used,memory.total", "--format=csv,noheader,nounits"],
             stderr=subprocess.DEVNULL, text=True, timeout=3
         )
-        vals=[]
+        rows=[]
         for line in out.splitlines():
             try:
-                vals.append(float(line.strip()))
-            except ValueError:
+                values=[float(x.strip()) for x in line.split(",")]
+                rows.append(values)
+            except (ValueError, IndexError):
                 pass
-        return sum(vals) if vals else None
+        if not rows:
+            return None
+        return {
+            "power_w": sum(x[0] for x in rows),
+            "temperature_c": max(x[1] for x in rows),
+            "utilization_percent": statistics.mean(x[2] for x in rows),
+            "sm_clock_mhz": statistics.mean(x[3] for x in rows),
+            "memory_used_mb": sum(x[4] for x in rows),
+            "memory_total_mb": sum(x[5] for x in rows),
+        }
     except Exception:
         return None
 
@@ -171,12 +265,12 @@ def _read_nvidia_power_w() -> float | None:
 class PowerSampler:
     def __init__(self, interval: float = 1.0):
         self.interval = interval
-        self.samples: list[float] = []
+        self.samples: list[dict[str, float]] = []
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self) -> None:
-        first = _read_nvidia_power_w()
+        first = _read_nvidia_sample()
         if first is None:
             return
         self.samples.append(first)
@@ -185,7 +279,7 @@ class PowerSampler:
 
     def _run(self) -> None:
         while not self._stop.wait(self.interval):
-            value = _read_nvidia_power_w()
+            value = _read_nvidia_sample()
             if value is not None:
                 self.samples.append(value)
 
@@ -195,18 +289,50 @@ class PowerSampler:
             self._thread.join(timeout=2)
         if not self.samples:
             return {"source": None, "available": False}
-        avg = sum(self.samples) / len(self.samples)
+        powers = [x["power_w"] for x in self.samples]
+        avg = statistics.mean(powers)
         return {
-            "source": "nvidia-smi:power.draw",
+            "source": "nvidia-smi",
             "available": True,
             "samples": len(self.samples),
             "average_w": avg,
-            "peak_w": max(self.samples),
+            "peak_w": max(powers),
+            "estimated_gpu_energy_wh": avg * elapsed_s / 3600.0,
             "approx_energy_wh": avg * elapsed_s / 3600.0,
+            "temperature_c": distribution_summary(x["temperature_c"] for x in self.samples),
+            "utilization_percent": distribution_summary(x["utilization_percent"] for x in self.samples),
+            "sm_clock_mhz": distribution_summary(x["sm_clock_mhz"] for x in self.samples),
+            "memory_used_mb": distribution_summary(x["memory_used_mb"] for x in self.samples),
+            "memory_total_mb": max(x["memory_total_mb"] for x in self.samples),
         }
 
 
+_WARMED_CONFIGURATIONS: set[tuple[str, str, int]] = set()
+_WARMUP_LOCK = threading.Lock()
+
+
+def _warm_ollama(api: str, model: str, mode: str, context: int) -> dict[str, Any] | None:
+    key = (model, mode, context)
+    with _WARMUP_LOCK:
+        if key in _WARMED_CONFIGURATIONS:
+            return ollama_runtime_snapshot(api, model)
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": "Reply with OK."}],
+            "stream": False,
+            "keep_alive": "30m",
+            "options": {"temperature": 0, "seed": 42, "num_ctx": context, "num_predict": 1},
+        }
+        include_think, think_value = mode_to_think(mode)
+        if include_think:
+            payload["think"] = think_value
+        _json_request(api.rstrip("/") + "/api/chat", payload, timeout=600)
+        _WARMED_CONFIGURATIONS.add(key)
+        return ollama_runtime_snapshot(api, model)
+
+
 def ollama_chat(api: str, model: str, messages: list[dict[str, str]], mode: str, *, temperature: float, seed: int, context: int) -> tuple[dict[str, Any], dict[str, Any], float, dict[str, Any]]:
+    runtime = _warm_ollama(api, model, mode, context)
     payload: dict[str, Any] = {
         "model": model,
         "messages": messages,
@@ -232,6 +358,16 @@ def ollama_chat(api: str, model: str, messages: list[dict[str, str]], mode: str,
     finally:
         elapsed = time.monotonic() - started
         power = sampler.stop(elapsed)
+    energy_wh = power.get("estimated_gpu_energy_wh")
+    output_tokens = int(response.get("eval_count") or 0)
+    prompt_tokens = int(response.get("prompt_eval_count") or 0)
+    if energy_wh is not None:
+        energy_j = float(energy_wh) * 3600.0
+        power["estimated_gpu_energy_j"] = energy_j
+        power["joules_per_output_token"] = energy_j / output_tokens if output_tokens else None
+        power["joules_per_prompt_token"] = energy_j / prompt_tokens if prompt_tokens else None
+    if runtime is not None:
+        response["_benchmark_runtime"] = runtime
     return payload, response, elapsed, power
 
 
@@ -252,6 +388,7 @@ def response_metrics(resp: dict[str, Any], elapsed_s: float) -> dict[str, Any]:
         "prompt_tokens_per_second": (prompt_count / (prompt_duration_ns / 1e9)) if prompt_count and prompt_duration_ns else None,
         "answer_chars": len(((resp.get("message") or {}).get("content") or "")),
         "thinking_chars": len(((resp.get("message") or {}).get("thinking") or "")),
+        "runtime": resp.get("_benchmark_runtime"),
     }
 
 
@@ -267,5 +404,18 @@ def evaluate_checks(answer: str, checks: Iterable[dict[str, Any]]) -> list[dict[
             passed = not any(matches)
         else:
             passed = any(matches)
-        results.append({"name": check.get("name"), "kind": kind, "passed": passed, "patterns": patterns, "matches": matches})
+        results.append({"name": check.get("name"), "kind": kind, "severity": check.get("severity", "required"), "passed": passed, "patterns": patterns, "matches": matches})
     return results
+
+
+def contract_metrics(checks: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    rows = list(checks)
+    passed = sum(bool(c.get("passed")) for c in rows)
+    total = len(rows)
+    return {
+        "checks_passed": passed,
+        "checks_total": total,
+        "contract_score": (passed / total) if total else None,
+        "full_contract_pass": bool(rows) and passed == total,
+        "critical_failure": any(c.get("severity") == "critical" and not c.get("passed") for c in rows),
+    }

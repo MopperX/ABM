@@ -21,21 +21,21 @@ export BENCH_CACHE_DIR="${BENCH_CACHE_DIR:-$BENCH_RESULTS_ROOT/cache}"
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 if ! need_cmd python3; then
-  echo "FOUT: python3 ontbreekt. Voer eerst ./bootstrap.sh uit." >&2
+  echo "ERROR: python3 is missing. Run ./bootstrap.sh first." >&2
   exit 1
 fi
 if ! need_cmd curl; then
-  echo "FOUT: curl ontbreekt. Voer eerst ./bootstrap.sh uit." >&2
+  echo "ERROR: curl is missing. Run ./bootstrap.sh first." >&2
   exit 1
 fi
 if ! need_cmd ollama; then
-  echo "FOUT: Ollama ontbreekt. Voer eerst ./bootstrap.sh uit." >&2
+  echo "ERROR: Ollama is missing. Run ./bootstrap.sh first." >&2
   exit 1
 fi
 
 # Ensure Ollama server is reachable before detaching the benchmark.
 if ! curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; then
-  echo "Ollama draait niet; service wordt gestart..."
+  echo "Ollama is not running; starting the service..."
   if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
     brew services start ollama >/dev/null 2>&1 || true
   elif command -v systemctl >/dev/null 2>&1; then
@@ -50,7 +50,7 @@ if ! curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; 
   done
 fi
 curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null || {
-  echo "FOUT: Ollama API is niet bereikbaar." >&2
+  echo "ERROR: Ollama API is unreachable." >&2
   exit 1
 }
 
@@ -90,8 +90,8 @@ for r in parse_model_rows(path):
 for model in dict.fromkeys(models):
     chk = subprocess.run(['ollama','show',model], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if chk.returncode != 0:
-        print(f'Model ontbreekt; downloaden: {model}', flush=True)
+        print(f'Model is missing; downloading: {model}', flush=True)
         subprocess.run(['ollama','pull',model], check=True)
     else:
-        print(f'Model aanwezig: {model}')
+        print(f'Model is available: {model}')
 PY

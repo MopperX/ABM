@@ -45,7 +45,7 @@ def _cache_root(run_dir: Path) -> Path:
 def _prepared(run_dir: Path) -> dict[str, Any]:
     p = _cache_root(run_dir) / "prepared.json"
     if not p.exists():
-        raise RuntimeError("Music preflight manifest ontbreekt")
+        raise RuntimeError("Music preflight manifest is missing")
     return load_json(p)
 
 
@@ -453,7 +453,7 @@ def run_music(*, repo_root: Path, run_dir: Path, music_config: Path, profile: st
         generator: MusicGenGenerator | None = None
 
         if not prepared or prepared.get("status") != "ready":
-            reason = "Model ontbreekt uit music preflight of backend is niet ondersteund"
+            reason = "Model is missing from music preflight or the backend is unsupported"
             for tid in PRACTICAL[profile]:
                 key = f"music|practical|{cfg['model']}|{cfg['revision']}|{tid}"
                 p = base / "unsupported" / "practical" / f"{tid}.json"
@@ -550,7 +550,7 @@ def run_music(*, repo_root: Path, run_dir: Path, music_config: Path, profile: st
                     external_rows.append(load_json(path)); continue
                 set_current({"benchmark": "music", "model": cfg["model"], "mode": "generation", "test": f"MusicBench-{i+1}/{len(mb['samples'])}", "repeat": 1, "repeats": 1})
                 if "text" not in cfg["capabilities"]:
-                    rr = {"type": "musicbench", "status": "unsupported", "model": cfg["model"], "source_index": sample["source_index"], "reason": "text capability ontbreekt", "pass": None}
+                    rr = {"type": "musicbench", "status": "unsupported", "model": cfg["model"], "source_index": sample["source_index"], "reason": "text capability is missing", "pass": None}
                     _write_result(path, rr); mark_completed(key, rr); external_rows.append(rr); continue
                 wav = base / "audio" / "musicbench" / f"{i:04d}.wav"
                 gen = generator.generate(prompt=sample["prompt"], duration=10.0, output=wav, melody=None, seed=SEED)

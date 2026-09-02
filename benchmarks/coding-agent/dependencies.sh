@@ -12,7 +12,7 @@ if [[ "$OS" == "Linux" ]]; then
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
   fi
 elif [[ "$OS" == "Darwin" ]]; then
-  command -v brew >/dev/null 2>&1 || { echo "FOUT: Homebrew ontbreekt; voer ./bootstrap.sh uit." >&2; exit 1; }
+  command -v brew >/dev/null 2>&1 || { echo "ERROR: Homebrew is missing; run ./bootstrap.sh." >&2; exit 1; }
   pkgs=()
   command -v php >/dev/null 2>&1 || pkgs+=(php)
   command -v git >/dev/null 2>&1 || pkgs+=(git)

@@ -8,7 +8,7 @@ PROFILE="${BENCH_PROFILE:-standard}"
 if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then SUDO=""; else SUDO="sudo"; fi
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  command -v brew >/dev/null 2>&1 || { echo "FOUT: Homebrew ontbreekt; voer eerst ./bootstrap.sh uit." >&2; exit 1; }
+  command -v brew >/dev/null 2>&1 || { echo "ERROR: Homebrew is missing; run ./bootstrap.sh first." >&2; exit 1; }
   brew list libsndfile >/dev/null 2>&1 || brew install libsndfile
 else
   missing=()

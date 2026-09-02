@@ -5,16 +5,16 @@ import statistics
 from pathlib import Path
 from typing import Any, Callable
 
-from lib.benchlib import atomic_json, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
+from lib.benchlib import atomic_json, contract_metrics, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
 from scripts.core_external import external_job_count, run_external
 
 SYSTEM_PROMPT = (
-    "Je bent een betrouwbare technische assistent. Maak duidelijk onderscheid tussen feiten, "
-    "hypotheses en onbekende informatie. Verzin geen logs, configuraties, versies, meetwaarden, "
-    "personen of oorzaken die niet uit de gegeven informatie volgen. Antwoord in het Nederlands."
+    "You are a reliable technical assistant. Clearly distinguish facts, hypotheses, and unknowns. "
+    "Do not invent logs, configurations, versions, measurements, people, or causes that do not "
+    "follow from the supplied information. Answer in English."
 )
 
-PROFILE_REPEATS = {"quick": 1, "standard": 3, "full": 3}
+PROFILE_REPEATS = {"quick": 1, "standard": 3, "full": 5}
 
 
 def selected_tests(repo_root: Path, profile: str) -> list[dict[str, Any]]:
@@ -90,13 +90,12 @@ def run_core(
                     messages.append({"role": "assistant", "content": answer})
 
             checks = evaluate_checks(answer, test.get("checks", []))
-            passed = sum(1 for c in checks if c["passed"])
-            total = len(checks)
+            contract = contract_metrics(checks)
             all_metrics = [c["metrics"] for c in api_calls]
             tps = [m["generation_tokens_per_second"] for m in all_metrics if m.get("generation_tokens_per_second") is not None]
             result = {
                 "test": test["id"], "title": test["title"], "repeat": repeat, "model": model, "mode": mode,
-                "completed_at": utc_now(), "checks_passed": passed, "checks_total": total, "pass": passed == total,
+                "completed_at": utc_now(), **contract, "pass": contract["full_contract_pass"],
                 "checks": checks, "final_answer": answer, "api_call_count": len(api_calls),
                 "generation_tps_median": statistics.median(tps) if tps else None,
             }
@@ -115,6 +114,8 @@ def run_core(
         "tests": test_summaries,
         "fully_passed_repeats": sum(1 for r in all_repeats if r.get("pass")),
         "total_repeats": len(all_repeats),
+        "confidence_interval_95": wilson_interval(sum(1 for r in all_repeats if r.get("pass")), len(all_repeats)),
+        "performance": distribution_summary(r["generation_tps_median"] for r in all_repeats if r.get("generation_tps_median") is not None),
     }
 
     if should_stop():

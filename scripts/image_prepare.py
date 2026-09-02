@@ -50,7 +50,7 @@ def even_subset(rows,n):
 
 def ensure_judge():
     if subprocess.run(['ollama','show',JUDGE_MODEL],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0:
-        print(f'Image evaluator ontbreekt; downloaden: {JUDGE_MODEL}',flush=True)
+        print(f'Image evaluator is missing; downloading: {JUDGE_MODEL}',flush=True)
         subprocess.run(['ollama','pull',JUDGE_MODEL],check=True)
 
 
@@ -103,7 +103,7 @@ def prepare_hps(profile,cache:Path):
         status['available']=True; status['preflight_score']=float(score[0] if isinstance(score,(list,tuple)) else score)
     except Exception as e:
         status['error']=f'{type(e).__name__}: {e}'
-        print('WAARSCHUWING: HPS v2.1 evaluator kon niet vooraf worden geladen; generation blijft beschikbaar.',file=sys.stderr)
+        print('WARNING: HPS v2.1 could not be preloaded; generation remains available.',file=sys.stderr)
     atomic(cache/'hps'/profile/'manifest.json',{'source':'HPSv2 benchmark prompts','profile':profile,'count':len(samples),'samples':samples,'evaluator':status})
 
 

@@ -8,14 +8,14 @@ import statistics
 from pathlib import Path
 from typing import Any, Callable
 
-from lib.benchlib import atomic_json, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
+from lib.benchlib import atomic_json, contract_metrics, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
 from scripts.agent_harness import init_workspace, run_agent_task
 from scripts.livecodebench_evalscope import run_livecodebench
 
 CHAT_PROFILES={
     "quick": {"tests":["C1","C2","C4","C6","C8","C9"],"repeats":1,"agents":["A1","A5"],"agent_repeats":1,"max_steps":22},
     "standard": {"tests":["C1","C2","C3","C4","C5","C6","C7","C8","C9"],"repeats":3,"agents":["A1","A2","A3","A4","A5"],"agent_repeats":1,"max_steps":40},
-    "full": {"tests":["C1","C2","C3","C4","C5","C6","C7","C8","C9"],"repeats":3,"agents":["A1","A2","A3","A4","A5"],"agent_repeats":3,"max_steps":60},
+    "full": {"tests":["C1","C2","C3","C4","C5","C6","C7","C8","C9"],"repeats":5,"agents":["A1","A2","A3","A4","A5"],"agent_repeats":5,"max_steps":60},
 }
 
 SYSTEM=(
@@ -187,9 +187,9 @@ def run_coding_agent(
                 chat_results.append(load_json(path)); continue
             set_current({"benchmark":"coding-agent","model":model,"mode":mode,"test":test_id,"repeat":rep,"repeats":int(cfg["repeats"])})
             payload,response,metrics,power,answer=_call(api,model,mode,task["prompt"],temperature=temperature,seed=seed,context=context)
-            checks=evaluate_checks(answer,task["checks"]); passed=_chat_pass(checks)
+            checks=evaluate_checks(answer,task["checks"]); contract=contract_metrics(checks); passed=contract["full_contract_pass"]
             result={"type":"code-chat","test":test_id,"title":task["title"],"repeat":rep,"model":model,"mode":mode,"completed_at":utc_now(),
-                    "pass":passed,"checks_passed":sum(c["passed"] for c in checks),"checks_total":len(checks),"checks":checks,
+                    "pass":passed,**contract,"checks":checks,
                     "prompt":task["prompt"],"final_answer":answer,"call":{"request":payload,"response":response,"metrics":metrics,"power":power}}
             atomic_json(path,result); mark_completed(logical,result); chat_results.append(result)
 
@@ -242,7 +242,8 @@ def _summarize_chat(rows:list[dict[str,Any]])->dict[str,Any]:
     calls=[r["call"] for r in rows]
     tps=[c["metrics"].get("generation_tokens_per_second") for c in calls if c["metrics"].get("generation_tokens_per_second") is not None]
     wall=[c["metrics"].get("wall_seconds") for c in calls if c["metrics"].get("wall_seconds") is not None]
-    return {"items":len(rows),"passed":sum(bool(r["pass"]) for r in rows),"pass_rate":sum(bool(r["pass"]) for r in rows)/len(rows),"per_test":by,
+    passed=sum(bool(r["pass"]) for r in rows)
+    return {"items":len(rows),"passed":passed,"pass_rate":passed/len(rows),"confidence_interval_95":wilson_interval(passed,len(rows)),"per_test":by,
             "performance":{"generation_tps_median":statistics.median(tps) if tps else None,"wall_seconds_median":statistics.median(wall) if wall else None}}
 
 

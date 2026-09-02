@@ -18,13 +18,13 @@ ensure_docker_linux() {
       for _ in $(seq 1 30); do $SUDO docker info >/dev/null 2>&1 && break; sleep 1; done
     fi
   fi
-  $SUDO docker info >/dev/null 2>&1 || { echo "FOUT: Docker daemon kon niet worden gestart." >&2; exit 1; }
+  $SUDO docker info >/dev/null 2>&1 || { echo "ERROR: Docker daemon could not be started." >&2; exit 1; }
   if ! docker info >/dev/null 2>&1; then
     user="$(id -un)"
     if [[ "$user" != "root" ]]; then
       $SUDO usermod -aG docker "$user"
       sg docker -c 'docker info >/dev/null 2>&1' || {
-        echo "FOUT: Docker is geïnstalleerd maar de docker-groep kan niet zonder nieuwe login worden geactiveerd." >&2
+        echo "ERROR: Docker is installed, but activating the docker group requires a new login." >&2
         exit 1
       }
     fi
@@ -32,19 +32,19 @@ ensure_docker_linux() {
 }
 
 ensure_docker_macos() {
-  command -v brew >/dev/null 2>&1 || { echo "FOUT: Homebrew ontbreekt; voer ./bootstrap.sh uit." >&2; exit 1; }
+  command -v brew >/dev/null 2>&1 || { echo "ERROR: Homebrew is missing; run ./bootstrap.sh." >&2; exit 1; }
   command -v docker >/dev/null 2>&1 || brew install docker
   command -v colima >/dev/null 2>&1 || brew install colima
   if ! docker info >/dev/null 2>&1; then
     echo "LiveCodeBench sandbox: Colima starten"
     colima start --cpu 2 --memory 4 --disk 20
   fi
-  docker info >/dev/null 2>&1 || { echo "FOUT: Docker/Colima is niet bereikbaar." >&2; exit 1; }
+  docker info >/dev/null 2>&1 || { echo "ERROR: Docker/Colima is unreachable." >&2; exit 1; }
 }
 
 if [[ "$OS" == "Linux" ]]; then ensure_docker_linux
 elif [[ "$OS" == "Darwin" ]]; then ensure_docker_macos
-else echo "FOUT: LiveCodeBench sandbox ondersteunt Linux/WSL en macOS." >&2; exit 1
+else echo "ERROR: the LiveCodeBench sandbox supports Linux/WSL and macOS." >&2; exit 1
 fi
 
 VENV="$ROOT/.venv-lcb"

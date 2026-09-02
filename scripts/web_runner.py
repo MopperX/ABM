@@ -106,7 +106,7 @@ def _cache_root(run_dir: Path) -> Path:
 def _prepared(run_dir: Path) -> dict[str, Any]:
     p = _cache_root(run_dir) / "prepared.json"
     if not p.exists():
-        raise RuntimeError("Web preflight manifest ontbreekt")
+        raise RuntimeError("Web preflight manifest is missing")
     return load_json(p)
 
 

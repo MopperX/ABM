@@ -5,9 +5,9 @@ from typing import Any, Callable
 from urllib import request, error
 from lib.benchlib import PowerSampler, atomic_json, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
 
-REPEATS={'quick':1,'standard':3,'full':3}
+REPEATS={'quick':1,'standard':3,'full':5}
 PRACTICAL={'quick':['V1','V4','V5','V7'],'standard':['V1','V2','V3','V4','V5','V6','V7'],'full':['V1','V2','V3','V4','V5','V6','V7']}
-SYSTEM='Analyseer uitsluitend wat visueel of in de prompt beschikbaar is. Verzin geen onzichtbare details. Volg het gevraagde antwoordformaat exact.'
+SYSTEM='Analyze only what is visible or provided in the prompt. Do not invent unseen details. Follow the requested answer format exactly.'
 
 def _chat(api,model,messages,mode,temperature,seed,context):
     payload={'model':model,'messages':messages,'stream':False,'options':{'temperature':temperature,'seed':seed,'num_ctx':context}}
