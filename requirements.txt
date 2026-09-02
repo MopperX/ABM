@@ -1,0 +1,2 @@
+# Base/Core currently uses only the Python standard library.
+# Module-specific Python dependencies will be installed by dependency hooks.

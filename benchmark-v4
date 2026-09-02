@@ -1,0 +1,414 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="$ROOT/.venv/bin/python"
+[[ -x "$PY" ]] || PY="$(command -v python3 || true)"
+BENCHES=(core coding-agent rag vision image speech music web)
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  RESULTS_ROOT="${BENCH_RESULTS_DIR:-/Library/Application Support/ai-benchmark-v4}"
+else
+  RESULTS_ROOT="${BENCH_RESULTS_DIR:-/var/lib/ai-benchmark-v4}"
+fi
+
+usage() {
+  cat <<'TXT'
+AI Benchmark v4
+
+Gebruik:
+  ./benchmark-v4                         interactieve checklist
+  ./benchmark-v4 start all [opties]
+  ./benchmark-v4 start core rag vision [opties]
+  ./benchmark-v4 status [run-id]
+  ./benchmark-v4 stop [run-id] [--force]
+  ./benchmark-v4 resume [run-id]
+  ./benchmark-v4 list-runs
+
+Opties bij start:
+  --profile quick|standard|full
+  --machine NAME       gebruikt config/machines/NAME.models.tsv
+  --with-livecodebench  voeg geïsoleerde externe LiveCodeBench toe aan Coding & Agent
+
+Environment:
+  BENCH_RESULTS_DIR    override persistente resultaatmap
+TXT
+}
+
+latest_run() {
+  "$PY" - "$RESULTS_ROOT/runs" <<'PY'
+import sys
+from pathlib import Path
+root=Path(sys.argv[1])
+runs=[p for p in root.glob('*/*') if p.is_dir() and (p/'state.json').exists()] if root.exists() else []
+print(max(runs, key=lambda p: p.stat().st_mtime) if runs else '')
+PY
+}
+
+resolve_run() {
+  local id="${1:-}"
+  if [[ -z "$id" ]]; then latest_run; return; fi
+  local found
+  found="$("$PY" - "$RESULTS_ROOT/runs" "$id" <<'PY'
+import sys
+from pathlib import Path
+root=Path(sys.argv[1]); rid=sys.argv[2]
+for p in root.glob('*/*') if root.exists() else []:
+    if p.is_dir() and p.name == rid:
+        print(p); break
+PY
+)"
+  [[ -n "$found" ]] || { echo "FOUT: run niet gevonden: $id" >&2; exit 1; }
+  echo "$found"
+}
+
+find_machine_config() {
+  local name="$1"
+  local path="$ROOT/config/machines/$name.models.tsv"
+  [[ -f "$path" ]] || {
+    echo "FOUT: machineconfig ontbreekt: $path" >&2
+    echo "Beschikbaar:" >&2
+    local f base
+    for f in "$ROOT"/config/machines/*.models.tsv; do
+      [[ -e "$f" ]] || continue
+      base="$(basename "$f" .models.tsv)"
+      echo "  $base" >&2
+    done
+    exit 1
+  }
+  echo "$path"
+}
+
+interactive() {
+  command -v dialog >/dev/null 2>&1 || {
+    echo "dialog ontbreekt. Voer eerst ./bootstrap.sh uit, of gebruik de CLI-modus." >&2
+    exit 1
+  }
+  local choices profile machine
+  choices=$(dialog --stdout --separate-output --checklist "Selecteer benchmarks (spatie = aan/uit)" 20 72 10 \
+    all "ALL - alle benchmarks" off \
+    core "Core LLM" on \
+    coding-agent "Coding & Agent" off \
+    rag "RAG / Documents" off \
+    vision "Vision / Screenshots" off \
+    image "Image Generation" off \
+    speech "Speech & Audio" off \
+    music "Music Generation" off \
+    web "Web / Research (local SearXNG)" off) || exit 0
+  [[ -n "$choices" ]] || { echo "Geen benchmarks geselecteerd."; exit 0; }
+  if grep -qx all <<<"$choices"; then
+    choices=$(printf '%s\n' "${BENCHES[@]}")
+  fi
+  profile=$(dialog --stdout --radiolist "Profiel" 12 55 4 quick "Snelle controle" off standard "Officiële vergelijking" on full "Volledige externe sets" off) || exit 0
+  local configs=() f name
+  for f in "$ROOT"/config/machines/*.models.tsv; do
+    [[ -e "$f" ]] || continue
+    name="$(basename "$f" .models.tsv)"
+    [[ "$name" == "template" ]] && continue
+    configs+=("$name" "$f" off)
+  done
+  machine=$(dialog --stdout --radiolist "Machineconfig" 18 76 10 "${configs[@]}") || exit 0
+  local with_lcb=0
+  if grep -qx coding-agent <<<"$choices"; then
+    if dialog --yesno "Ook de externe LiveCodeBench-laag draaien?\n\nDeze installeert een container-sandbox en is zwaarder dan de praktische Coding & Agent-tests." 11 72; then
+      with_lcb=1
+    fi
+  fi
+  local arr=() line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && arr+=("$line")
+  done <<< "$choices"
+  if ((with_lcb)); then
+    "$0" start "${arr[@]}" --profile "$profile" --machine "$machine" --with-livecodebench
+  else
+    "$0" start "${arr[@]}" --profile "$profile" --machine "$machine"
+  fi
+}
+
+start_run() {
+  local profile="standard" machine="" with_lcb=0 selected=()
+  while (($#)); do
+    case "$1" in
+      --profile) profile="$2"; shift 2 ;;
+      --machine) machine="$2"; shift 2 ;;
+      --with-livecodebench) with_lcb=1; shift ;;
+      --*) echo "Onbekende optie: $1" >&2; exit 2 ;;
+      *) selected+=("$1"); shift ;;
+    esac
+  done
+  [[ "$profile" =~ ^(quick|standard|full)$ ]] || { echo "FOUT: ongeldig profiel: $profile" >&2; exit 2; }
+  if ((${#selected[@]}==0)); then selected=(core); fi
+  if [[ " ${selected[*]} " == *" all "* ]]; then selected=("${BENCHES[@]}"); fi
+  local b
+  for b in "${selected[@]}"; do
+    [[ " ${BENCHES[*]} " == *" $b "* ]] || { echo "FOUT: onbekende benchmark: $b" >&2; exit 2; }
+  done
+  if [[ -z "$machine" ]]; then
+    machine="$(hostname -s 2>/dev/null || hostname)"
+    [[ -f "$ROOT/config/machines/$machine.models.tsv" ]] || {
+      echo "FOUT: geen machineconfig voor hostname '$machine'. Gebruik --machine NAME." >&2
+      exit 2
+    }
+  fi
+  local machine_config; machine_config="$(find_machine_config "$machine")"
+  [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
+    echo "FOUT: resultaatmap ontbreekt of is niet schrijfbaar: $RESULTS_ROOT" >&2
+    echo "Voer eerst ./bootstrap.sh uit." >&2
+    exit 1
+  }
+  local selected_csv; selected_csv="$(IFS=,; echo "${selected[*]}")"
+
+  if ((with_lcb)) && [[ " $selected_csv " != *"coding-agent"* ]]; then
+    echo "FOUT: --with-livecodebench vereist dat coding-agent is geselecteerd." >&2; exit 2
+  fi
+  echo "Preflight: dependencies, Ollama en modellen controleren..."
+  "$ROOT/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
+
+  local run_id run_dir now
+  now="$(date -u +%Y%m%dT%H%M%SZ)"
+  run_id="${now}-$(printf '%04x' $((RANDOM % 65536)))"
+  run_dir="$RESULTS_ROOT/runs/$machine/$run_id"
+  mkdir -p "$run_dir/raw" "$run_dir/summary" "$run_dir/config" "$run_dir/source"
+
+  # Freeze the exact benchmark source/fixtures for this run. This keeps a running or resumed
+  # benchmark reproducible even when the public Git checkout is updated afterwards. Virtual
+  # environments, Git metadata, caches and generated bytecode are intentionally excluded.
+  "$PY" - "$ROOT" "$run_dir/source" <<'PY'
+import os, shutil, sys
+from pathlib import Path
+src=Path(sys.argv[1]).resolve(); dst=Path(sys.argv[2]).resolve()
+ignore_dirs={'.git','.venv','.venv-lcb','__pycache__'}
+ignore_suffixes={'.pyc','.pyo'}
+for root, dirs, files in os.walk(src):
+    rel=Path(root).relative_to(src)
+    dirs[:] = [d for d in dirs if d not in ignore_dirs]
+    out=dst/rel
+    out.mkdir(parents=True, exist_ok=True)
+    for name in files:
+        if Path(name).suffix in ignore_suffixes:
+            continue
+        source=Path(root)/name
+        target=out/name
+        if source.is_symlink():
+            target.symlink_to(os.readlink(source))
+        else:
+            shutil.copy2(source,target)
+PY
+  # Runtime environments stay shared to avoid duplicating many GB per run; only source/fixtures are frozen.
+  [[ -d "$ROOT/.venv" ]] && ln -s "$ROOT/.venv" "$run_dir/source/.venv"
+  [[ -d "$ROOT/.venv-lcb" ]] && ln -s "$ROOT/.venv-lcb" "$run_dir/source/.venv-lcb"
+
+  cp "$machine_config" "$run_dir/config/machine.models.tsv"
+  local image_config_src="$ROOT/config/image-models/$machine.models.tsv"
+  [[ -f "$image_config_src" ]] || image_config_src="$ROOT/config/image-models/template.models.tsv"
+  if [[ -f "$image_config_src" ]]; then cp "$image_config_src" "$run_dir/config/image.models.tsv"; fi
+  local speech_config_src="$ROOT/config/speech-models/$machine.models.tsv"
+  [[ -f "$speech_config_src" ]] || speech_config_src="$ROOT/config/speech-models/template.models.tsv"
+  if [[ -f "$speech_config_src" ]]; then cp "$speech_config_src" "$run_dir/config/speech.models.tsv"; fi
+  local music_config_src="$ROOT/config/music-models/$machine.models.tsv"
+  [[ -f "$music_config_src" ]] || music_config_src="$ROOT/config/music-models/template.models.tsv"
+  if [[ -f "$music_config_src" ]]; then cp "$music_config_src" "$run_dir/config/music.models.tsv"; fi
+  machine_config="$run_dir/config/machine.models.tsv"
+  local git_commit="" git_dirty="unknown"
+  git_commit="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
+  if [[ -n "$git_commit" ]]; then
+    if [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null || true)" ]]; then git_dirty="true"; else git_dirty="false"; fi
+  fi
+  "$PY" - "$run_dir/raw/source.json" "$machine_config" "$git_commit" "$git_dirty" "$run_dir/config/image.models.tsv" "$run_dir/config/speech.models.tsv" "$run_dir/config/music.models.tsv" "$run_dir/source" <<'PY'
+import hashlib,json,sys
+from datetime import datetime,timezone
+from pathlib import Path
+out=Path(sys.argv[1]); cfg=Path(sys.argv[2]); commit=sys.argv[3] or None; dirty=sys.argv[4]; image_cfg=Path(sys.argv[5]); speech_cfg=Path(sys.argv[6]); music_cfg=Path(sys.argv[7]); source_root=Path(sys.argv[8])
+h=hashlib.sha256()
+for f in sorted(x for x in source_root.rglob('*') if x.is_file() and not x.is_symlink()):
+    h.update(str(f.relative_to(source_root)).encode()); h.update(b'\0'); h.update(f.read_bytes()); h.update(b'\0')
+version_file=source_root/"VERSION"
+version=version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "v4"
+data={
+  "benchmark_version":version,
+  "git_commit":commit,
+  "git_dirty": None if dirty=="unknown" else dirty=="true",
+  "source_snapshot":"source",
+  "source_snapshot_sha256":h.hexdigest(),
+  "machine_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
+  "image_model_config_sha256": hashlib.sha256(image_cfg.read_bytes()).hexdigest() if image_cfg.exists() else None,
+  "speech_model_config_sha256": hashlib.sha256(speech_cfg.read_bytes()).hexdigest() if speech_cfg.exists() else None,
+  "music_model_config_sha256": hashlib.sha256(music_cfg.read_bytes()).hexdigest() if music_cfg.exists() else None,
+  "captured_at":datetime.now(timezone.utc).isoformat(timespec="seconds"),
+}
+out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
+PY
+  "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" <<'PY'
+import json,sys
+from datetime import datetime,timezone
+from pathlib import Path
+run=Path(sys.argv[1]); rid=sys.argv[2]; machine=sys.argv[3]; profile=sys.argv[4]; selected=sys.argv[5].split(','); with_lcb=sys.argv[6]=='1'
+state={
+ "schema_version":1,"run_id":rid,"machine":machine,"profile":profile,"selected_benchmarks":selected,"with_livecodebench":with_lcb,
+ "status":"starting","created_at":datetime.now(timezone.utc).isoformat(timespec='seconds'),"started_at":None,
+ "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{}
+}
+(run/'state.json').write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+PY
+  "$PY" - "$run_dir/state.json" <<'PY'
+import json,sys
+from datetime import datetime,timezone
+p=sys.argv[1]; s=json.load(open(p)); s['started_at']=datetime.now(timezone.utc).isoformat(timespec='seconds'); open(p,'w').write(json.dumps(s,indent=2)+'\n')
+PY
+
+  local log="$run_dir/benchmark.log"
+  local run_source="$run_dir/source"
+  local runner=("$PY" "$run_source/scripts/runner.py" --run-dir "$run_dir" --machine-config "$machine_config")
+  if [[ "$(uname -s)" == "Darwin" ]] && command -v caffeinate >/dev/null 2>&1; then
+    nohup caffeinate -i -m "${runner[@]}" >>"$log" 2>&1 < /dev/null &
+  else
+    nohup "${runner[@]}" >>"$log" 2>&1 < /dev/null &
+  fi
+  local pid=$!
+  echo "$pid" > "$run_dir/launcher.pid"
+  sleep 0.5
+  echo
+  echo "Run gestart: $run_id"
+  echo "Machine:     $machine"
+  echo "Benchmarks:  $selected_csv"
+  echo "Profile:     $profile"
+  ((with_lcb)) && echo "LiveCodeBench: enabled (sandboxed)"
+  echo "Resultaten:  $run_dir"
+  echo
+  echo "SSH/terminal mag nu worden afgesloten."
+  echo "Status: ./benchmark-v4 status $run_id"
+  echo "Stop:   ./benchmark-v4 stop $run_id"
+}
+
+show_status() {
+  local run_dir; run_dir="$(resolve_run "${1:-}")"
+  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  "$PY" - "$run_dir/state.json" <<'PY'
+import json,sys
+s=json.load(open(sys.argv[1]))
+p=s.get('progress') or {}; c=p.get('current') or {}
+print(f"Run:        {s.get('run_id')}")
+print(f"Machine:    {s.get('machine')}")
+print(f"Status:     {s.get('status')}")
+print(f"Profile:    {s.get('profile')}")
+print(f"Benchmarks: {', '.join(s.get('selected_benchmarks', []))}")
+print(f"LiveCodeBench: {'enabled' if s.get('with_livecodebench') else 'disabled'}")
+print(f"Progress:   {p.get('completed',0)} / {p.get('total',0)} ({p.get('percent',0)}%)")
+if c:
+    line=f"Current:    {c.get('benchmark','?')} | {c.get('model','?')} | {c.get('mode','?')} | {c.get('test','?')} | repeat {c.get('repeat','?')}/{c.get('repeats','?')}"
+    if c.get('turn'): line += f" | turn {c['turn']}/{c.get('turns','?')}"
+    print(line)
+if s.get('error'):
+    print(f"Error:      {s['error'].get('type')}: {s['error'].get('message')}")
+PY
+  echo "Log:        $run_dir/benchmark.log"
+}
+
+stop_run() {
+  local id="" force=0
+  while (($#)); do
+    case "$1" in --force) force=1; shift;; *) id="$1"; shift;; esac
+  done
+  local run_dir; run_dir="$(resolve_run "$id")"
+  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  if ((force)); then
+    local pid=""
+    [[ -f "$run_dir/runner.pid" ]] && pid="$(cat "$run_dir/runner.pid")"
+    [[ -z "$pid" && -f "$run_dir/launcher.pid" ]] && pid="$(cat "$run_dir/launcher.pid")"
+    if [[ -n "$pid" ]]; then kill -TERM "$pid" 2>/dev/null || true; sleep 1; kill -KILL "$pid" 2>/dev/null || true; fi
+    echo "Force-stop verzonden voor $(basename "$run_dir")."
+  else
+    touch "$run_dir/stop.requested"
+    echo "Graceful stop aangevraagd voor $(basename "$run_dir"). De huidige Ollama-call mag afronden."
+  fi
+}
+
+resume_run() {
+  local run_dir; run_dir="$(resolve_run "${1:-}")"
+  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  local machine; machine="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["machine"])' "$run_dir/state.json")"
+  local machine_config="$run_dir/config/machine.models.tsv"
+  local source_file="$run_dir/raw/source.json"
+  local run_source="$run_dir/source"
+  if [[ ! -f "$run_source/scripts/runner.py" ]]; then
+    # Backwards compatibility for old runs created before per-run source snapshots existed.
+    run_source="$ROOT"
+    if [[ -f "$source_file" ]]; then
+      local original_commit current_commit
+      original_commit="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_commit") or "")' "$source_file")"
+      current_commit="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
+      if [[ -n "$original_commit" && -n "$current_commit" && "$original_commit" != "$current_commit" ]]; then
+        echo "FOUT: oude run zonder bron-snapshot begon op Git commit $original_commit maar de repository staat nu op $current_commit." >&2
+        echo "Checkout eerst de oorspronkelijke commit of start een nieuwe run." >&2
+        exit 1
+      fi
+    fi
+  fi
+  if [[ ! -f "$machine_config" ]]; then
+    # Backwards compatibility for runs created before per-run config snapshots existed.
+    machine_config="$(find_machine_config "$machine")"
+  fi
+  local selected_csv profile with_lcb
+  selected_csv="$($PY -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["selected_benchmarks"]))' "$run_dir/state.json")"
+  profile="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["profile"])' "$run_dir/state.json")"
+  with_lcb="$($PY -c 'import json,sys; print(1 if json.load(open(sys.argv[1])).get("with_livecodebench") else 0)' "$run_dir/state.json")"
+  echo "Preflight voor resume: dependencies, Ollama en oorspronkelijke modellen controleren..."
+  # Use the snapshotted dependency hooks where possible. They may refer to the repository venv,
+  # so expose the live venv to the snapshot without copying gigabytes into every run.
+  if [[ "$run_source" != "$ROOT" && -d "$ROOT/.venv" ]]; then
+    [[ -L "$run_source/.venv" && ! -e "$run_source/.venv" ]] && rm -f "$run_source/.venv"
+    [[ -e "$run_source/.venv" || -L "$run_source/.venv" ]] || ln -s "$ROOT/.venv" "$run_source/.venv"
+  fi
+  if [[ "$run_source" != "$ROOT" && -d "$ROOT/.venv-lcb" ]]; then
+    [[ -L "$run_source/.venv-lcb" && ! -e "$run_source/.venv-lcb" ]] && rm -f "$run_source/.venv-lcb"
+    [[ -e "$run_source/.venv-lcb" || -L "$run_source/.venv-lcb" ]] || ln -s "$ROOT/.venv-lcb" "$run_source/.venv-lcb"
+  fi
+  "$run_source/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
+  rm -f "$run_dir/stop.requested"
+  "$PY" - "$run_dir/state.json" <<'PY'
+import json,sys
+p=sys.argv[1]; s=json.load(open(p));
+if s.get('status')=='completed': raise SystemExit('FOUT: deze run is al completed.')
+s['status']='resuming'; s.pop('error',None); open(p,'w').write(json.dumps(s,indent=2)+'\n')
+PY
+  local log="$run_dir/benchmark.log"
+  local runner=("$PY" "$run_source/scripts/runner.py" --run-dir "$run_dir" --machine-config "$machine_config" --resume)
+  if [[ "$(uname -s)" == "Darwin" ]] && command -v caffeinate >/dev/null 2>&1; then
+    nohup caffeinate -i -m "${runner[@]}" >>"$log" 2>&1 < /dev/null &
+  else
+    nohup "${runner[@]}" >>"$log" 2>&1 < /dev/null &
+  fi
+  echo $! > "$run_dir/launcher.pid"
+  echo "Run hervat: $(basename "$run_dir")"
+}
+
+list_runs() {
+  "$PY" - "$RESULTS_ROOT/runs" <<'PY'
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1])
+rows=[]
+for d in root.glob('*/*') if root.exists() else []:
+    p=d/'state.json'
+    if d.is_dir() and p.exists():
+        try:
+            s=json.load(open(p))
+            rows.append((s.get('created_at',''), f"{s.get('run_id')}\t{s.get('machine')}\t{s.get('status')}\t{s.get('profile')}\t{','.join(s.get('selected_benchmarks',[]))}"))
+        except Exception:
+            pass
+for _,line in sorted(rows): print(line)
+PY
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  "") interactive ;;
+  start) shift; start_run "$@" ;;
+  status) shift; show_status "${1:-}" ;;
+  stop) shift; stop_run "$@" ;;
+  resume) shift; resume_run "${1:-}" ;;
+  list-runs) list_runs ;;
+  -h|--help|help) usage ;;
+  *) echo "Onbekend commando: $cmd" >&2; usage; exit 2 ;;
+esac
