@@ -83,20 +83,20 @@ Providerkeuze voor TTS is best effort: CoreML op macOS, CUDA op een NVIDIA-worke
 
 ## Modelconfig per machine
 
-Speechmodellen staan los van Ollama- en image-modellen:
+Speechmodellen staan in dezelfde machineconfig als alle andere modellen:
 
 ```text
-config/speech-models/<machine>.models.tsv
+config/machines/<machine>.models.tsv
 ```
 
-Voorbeeld:
+Voorbeeld (ingekort weergegeven):
 
 ```text
-true  stt  whisper-small  small  nl
-true  tts  piper-nl-alex  vits-piper-nl_NL-alex-medium  nl_NL  0
+true  small                              whispercpp       speech  standard  false  ...  nl     ...  Whisper small
+true  vits-piper-nl_NL-alex-medium      sherpa-onnx-tts  speech  standard  false  ...  nl_NL  0    Dutch TTS
 ```
 
-Je kunt zwaardere Whispermodellen per machine in Git activeren zonder andere machines te wijzigen.
+Je kunt zwaardere Whisper- of extra TTS-modellen per machine in Git activeren zonder een tweede configuratiebestand te onderhouden.
 
 ## Profielen
 

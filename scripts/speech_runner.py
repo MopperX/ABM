@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, utc_now
+from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
 
 STT_PRACTICAL={"quick":["S1","S2","S3"],"standard":["S1","S2","S3","S4","S5"],"full":["S1","S2","S3","S4","S5"]}
 TTS_TESTS={"quick":["T1","T2","T4"],"standard":["T1","T2","T3","T4"],"full":["T1","T2","T3","T4"]}
@@ -23,14 +23,14 @@ TTS_TESTS={"quick":["T1","T2","T4"],"standard":["T1","T2","T3","T4"],"full":["T1
 def parse_speech_models(path:Path)->list[dict[str,str]]:
     out=[]
     if not path.exists(): return out
-    with path.open(encoding='utf-8',newline='') as f:
-        rows=(x for x in f if x.strip() and not x.lstrip().startswith('#'))
-        r=csv.DictReader(rows,delimiter='\t',fieldnames=['enabled','kind','id','model','language','speaker','notes'])
-        for row in r:
-            if (row.get('enabled') or '').strip().lower() not in {'1','true','yes','on'}: continue
-            out.append({k:(v or '').strip() for k,v in row.items()})
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        backend=row['backend'].lower()
+        if 'speech' not in suites or backend not in {'whispercpp','sherpa-onnx-tts'}:
+            continue
+        kind='stt' if backend == 'whispercpp' else 'tts'
+        out.append({'kind':kind,'id':row['model'],'model':row['model'],'language':row['language'],'speaker':row['speaker'],'notes':row['notes']})
     return out
-
 
 def _prepared(run_dir:Path)->dict[str,Any]:
     return load_json(run_dir.parents[2]/'cache'/'speech'/'prepared.json')

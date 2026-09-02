@@ -198,27 +198,19 @@ PY
   [[ -d "$ROOT/.venv" ]] && ln -s "$ROOT/.venv" "$run_dir/source/.venv"
   [[ -d "$ROOT/.venv-lcb" ]] && ln -s "$ROOT/.venv-lcb" "$run_dir/source/.venv-lcb"
 
+  # One unified model configuration is frozen per run. Every suite filters its own backend/suite rows.
   cp "$machine_config" "$run_dir/config/machine.models.tsv"
-  local image_config_src="$ROOT/config/image-models/$machine.models.tsv"
-  [[ -f "$image_config_src" ]] || image_config_src="$ROOT/config/image-models/template.models.tsv"
-  if [[ -f "$image_config_src" ]]; then cp "$image_config_src" "$run_dir/config/image.models.tsv"; fi
-  local speech_config_src="$ROOT/config/speech-models/$machine.models.tsv"
-  [[ -f "$speech_config_src" ]] || speech_config_src="$ROOT/config/speech-models/template.models.tsv"
-  if [[ -f "$speech_config_src" ]]; then cp "$speech_config_src" "$run_dir/config/speech.models.tsv"; fi
-  local music_config_src="$ROOT/config/music-models/$machine.models.tsv"
-  [[ -f "$music_config_src" ]] || music_config_src="$ROOT/config/music-models/template.models.tsv"
-  if [[ -f "$music_config_src" ]]; then cp "$music_config_src" "$run_dir/config/music.models.tsv"; fi
   machine_config="$run_dir/config/machine.models.tsv"
   local git_commit="" git_dirty="unknown"
   git_commit="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
   if [[ -n "$git_commit" ]]; then
     if [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null || true)" ]]; then git_dirty="true"; else git_dirty="false"; fi
   fi
-  "$PY" - "$run_dir/raw/source.json" "$machine_config" "$git_commit" "$git_dirty" "$run_dir/config/image.models.tsv" "$run_dir/config/speech.models.tsv" "$run_dir/config/music.models.tsv" "$run_dir/source" <<'PY'
+  "$PY" - "$run_dir/raw/source.json" "$machine_config" "$git_commit" "$git_dirty" "$run_dir/source" <<'PY'
 import hashlib,json,sys
 from datetime import datetime,timezone
 from pathlib import Path
-out=Path(sys.argv[1]); cfg=Path(sys.argv[2]); commit=sys.argv[3] or None; dirty=sys.argv[4]; image_cfg=Path(sys.argv[5]); speech_cfg=Path(sys.argv[6]); music_cfg=Path(sys.argv[7]); source_root=Path(sys.argv[8])
+out=Path(sys.argv[1]); cfg=Path(sys.argv[2]); commit=sys.argv[3] or None; dirty=sys.argv[4]; source_root=Path(sys.argv[5])
 h=hashlib.sha256()
 for f in sorted(x for x in source_root.rglob('*') if x.is_file() and not x.is_symlink()):
     h.update(str(f.relative_to(source_root)).encode()); h.update(b'\0'); h.update(f.read_bytes()); h.update(b'\0')
@@ -230,10 +222,7 @@ data={
   "git_dirty": None if dirty=="unknown" else dirty=="true",
   "source_snapshot":"source",
   "source_snapshot_sha256":h.hexdigest(),
-  "machine_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
-  "image_model_config_sha256": hashlib.sha256(image_cfg.read_bytes()).hexdigest() if image_cfg.exists() else None,
-  "speech_model_config_sha256": hashlib.sha256(speech_cfg.read_bytes()).hexdigest() if speech_cfg.exists() else None,
-  "music_model_config_sha256": hashlib.sha256(music_cfg.read_bytes()).hexdigest() if music_cfg.exists() else None,
+  "machine_model_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
   "captured_at":datetime.now(timezone.utc).isoformat(timespec="seconds"),
 }
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")

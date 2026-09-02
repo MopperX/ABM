@@ -4,6 +4,9 @@ import argparse, csv, json, os, subprocess, sys, tempfile
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.benchlib import parse_model_rows
+
 GENEVAL_REV='a6e82d2289e8d418f27f0adee77908b07060eea3'
 JUDGE_MODEL='qwen3-vl:4b-instruct'
 
@@ -15,31 +18,25 @@ def atomic(path:Path,data:Any):
     tmp.replace(path)
 
 
-def machine_name(path:Path)->str:
-    n=path.name
-    return n[:-len('.models.tsv')] if n.endswith('.models.tsv') else path.stem
-
-
 def image_config_for(machine_cfg:Path, repo:Path)->Path:
-    sibling=machine_cfg.parent/'image.models.tsv'
-    if machine_cfg.name=='machine.models.tsv' and sibling.exists(): return sibling
-    name=machine_name(machine_cfg)
-    p=repo/'config/image-models'/f'{name}.models.tsv'
-    if not p.exists():
-        p=repo/'config/image-models/template.models.tsv'
-    return p
+    return machine_cfg
 
 
 def parse_models(path:Path):
     out=[]
-    with path.open(encoding='utf-8',newline='') as f:
-        rows=(x for x in f if x.strip() and not x.lstrip().startswith('#'))
-        r=csv.DictReader(rows,delimiter='\t',fieldnames=['enabled','model','revision','steps','guidance','offload','notes'])
-        for row in r:
-            if (row.get('enabled') or '').strip().lower() not in {'1','true','yes','on'}: continue
-            out.append({k:(v or '').strip() for k,v in row.items()})
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        if 'image' not in suites or row['backend'].lower() != 'diffusers':
+            continue
+        out.append({
+            'model':row['model'],
+            'revision':row['revision'] or 'main',
+            'steps':int(row['steps'] or 20),
+            'guidance':float(row['guidance'] or 7.5),
+            'offload':row['offload'] or 'auto',
+            'notes':row['notes'],
+        })
     return out
-
 
 def even_subset(rows,n):
     if n>=len(rows): return list(rows)

@@ -54,6 +54,27 @@ def parse_defaults(path: Path) -> dict[str, str]:
     return values
 
 
+MODEL_CONFIG_FIELDS = [
+    "enabled", "model", "backend", "suites", "modes", "web", "revision", "capabilities",
+    "steps", "guidance", "offload", "top_k", "temperature", "language", "speaker", "notes",
+]
+
+
+def parse_model_rows(path: Path, *, enabled_only: bool = True) -> list[dict[str, str]]:
+    rows_out: list[dict[str, str]] = []
+    with path.open("r", encoding="utf-8", newline="") as f:
+        rows = (line for line in f if line.strip() and not line.lstrip().startswith("#"))
+        reader = csv.DictReader(rows, delimiter="\t", fieldnames=MODEL_CONFIG_FIELDS)
+        for row in reader:
+            clean = {k: (row.get(k) or "").strip() for k in MODEL_CONFIG_FIELDS}
+            if enabled_only and clean["enabled"].lower() not in {"1", "true", "yes", "on"}:
+                continue
+            if not clean["model"]:
+                continue
+            rows_out.append(clean)
+    return rows_out
+
+
 @dataclass(frozen=True)
 class ModelConfig:
     model: str
@@ -64,20 +85,19 @@ class ModelConfig:
 
 
 def parse_machine_models(path: Path) -> list[ModelConfig]:
+    """Return enabled Ollama models used by LLM-style benchmark suites.
+
+    Image, speech and music rows live in the same machine TSV but are consumed by their
+    modality-specific runners.
+    """
     models: list[ModelConfig] = []
-    with path.open("r", encoding="utf-8", newline="") as f:
-        rows = (line for line in f if line.strip() and not line.lstrip().startswith("#"))
-        reader = csv.DictReader(rows, delimiter="\t", fieldnames=["enabled", "model", "benchmarks", "modes", "web", "notes"])
-        for row in reader:
-            if (row.get("enabled") or "").strip().lower() not in {"1", "true", "yes", "on"}:
-                continue
-            model = (row.get("model") or "").strip()
-            if not model:
-                continue
-            benches = tuple(x.strip() for x in (row.get("benchmarks") or "").split(",") if x.strip())
-            modes = tuple(x.strip() for x in (row.get("modes") or "standard").split(",") if x.strip()) or ("standard",)
-            web = (row.get("web") or "").strip().lower() in {"1", "true", "yes", "on"}
-            models.append(ModelConfig(model, benches, modes, web, (row.get("notes") or "").strip()))
+    for row in parse_model_rows(path):
+        if row["backend"].lower() != "ollama":
+            continue
+        suites = tuple(x.strip() for x in row["suites"].split(",") if x.strip())
+        modes = tuple(x.strip() for x in (row["modes"] or "standard").split(",") if x.strip()) or ("standard",)
+        web = row["web"].lower() in {"1", "true", "yes", "on"}
+        models.append(ModelConfig(row["model"], suites, modes, web, row["notes"]))
     return models
 
 

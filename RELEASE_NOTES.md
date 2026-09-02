@@ -1,6 +1,6 @@
-# AI Benchmark v4 — 4.0.0-rc2
+# AI Benchmark v4 — 4.0.0-rc3
 
-Second release candidate for public Git review and real-worker validation.
+Third release candidate for public Git review and real-worker validation.
 
 ## Included suites
 
@@ -30,6 +30,15 @@ The harness has been syntax-, lifecycle-, fixture-, and mock-inference tested. S
 
 The repository's own benchmark code is now licensed under **Apache License 2.0** via the top-level `LICENSE` file. Third-party datasets, models, evaluators, and dependencies retain their upstream licenses as documented in `THIRD_PARTY.md`.
 
+
+## Changes since rc2
+
+- replaced four separate per-machine model configuration locations with **one unified `config/machines/<machine>.models.tsv`**;
+- added `backend` and `suites` columns so Ollama, Diffusers, Whisper, sherpa-onnx TTS and MusicGen rows can coexist cleanly;
+- added optional shared columns for modality-specific settings such as revision, capabilities, steps, guidance, language and speaker;
+- every run now snapshots only that one complete model configuration;
+- updated preflight and all modality runners to filter the unified file by backend + suite;
+- removed the old `config/image-models`, `config/speech-models` and `config/music-models` directories.
 
 ## Changes since rc1
 

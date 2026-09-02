@@ -69,22 +69,24 @@ if [[ "$WITH_LIVECODEBENCH" == "1" ]]; then
 fi
 
 # Pull only enabled models relevant to selected benchmarks.
-python3 - "$MACHINE_CONFIG" "$SELECTED" <<'PY'
-import csv, subprocess, sys
+python3 - "$MACHINE_CONFIG" "$SELECTED" "$REPO_ROOT" <<'PY'
+import subprocess, sys
 from pathlib import Path
+sys.path.insert(0, sys.argv[3])
+from lib.benchlib import parse_model_rows
 path = Path(sys.argv[1])
 selected = set(sys.argv[2].split(','))
-with path.open(encoding='utf-8', newline='') as f:
-    rows = (line for line in f if line.strip() and not line.lstrip().startswith('#'))
-    reader = csv.DictReader(rows, delimiter='\t', fieldnames=['enabled','model','benchmarks','modes','web','notes'])
-    models=[]
-    for r in reader:
-        if (r['enabled'] or '').strip().lower() not in {'1','true','yes','on'}:
-            continue
-        benches=set(x.strip() for x in (r['benchmarks'] or '').split(',') if x.strip())
-        web=(r['web'] or '').strip().lower() in {'1','true','yes','on'}
-        if (selected & benches) or ('web' in selected and web):
-            models.append(r['model'].strip())
+models=[]
+for r in parse_model_rows(path):
+    if r['backend'].lower() != 'ollama':
+        continue
+    suites=set(x.strip() for x in r['suites'].split(',') if x.strip())
+    web=r['web'].lower() in {'1','true','yes','on'}
+    relevant=bool(selected & suites)
+    if 'web' in selected and 'web' in suites and not web:
+        relevant=False
+    if relevant:
+        models.append(r['model'])
 for model in dict.fromkeys(models):
     chk = subprocess.run(['ollama','show',model], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if chk.returncode != 0:

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, utc_now
+from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
 
 PRACTICAL = {
     "quick": ["M1", "M3", "M6"],
@@ -26,30 +26,17 @@ def parse_music_models(path: Path) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     if not path.exists():
         return out
-    with path.open(encoding="utf-8", newline="") as f:
-        rows = (x for x in f if x.strip() and not x.lstrip().startswith("#"))
-        r = csv.DictReader(
-            rows,
-            delimiter="\t",
-            fieldnames=["enabled", "backend", "model", "revision", "capabilities", "guidance", "top_k", "temperature", "notes"],
-        )
-        for row in r:
-            if (row.get("enabled") or "").strip().lower() not in {"1", "true", "yes", "on"}:
-                continue
-            out.append(
-                {
-                    "backend": (row.get("backend") or "transformers-musicgen").strip(),
-                    "model": (row.get("model") or "").strip(),
-                    "revision": (row.get("revision") or "main").strip(),
-                    "capabilities": {x.strip() for x in (row.get("capabilities") or "text").split(",") if x.strip()},
-                    "guidance": float(row.get("guidance") or 3.0),
-                    "top_k": int(row.get("top_k") or 250),
-                    "temperature": float(row.get("temperature") or 1.0),
-                    "notes": (row.get("notes") or "").strip(),
-                }
-            )
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        if 'music' not in suites or row['backend'].lower() != 'transformers-musicgen':
+            continue
+        out.append({
+            'backend':row['backend'], 'model':row['model'], 'revision':row['revision'] or 'main',
+            'capabilities':{x.strip() for x in (row['capabilities'] or 'text').split(',') if x.strip()},
+            'guidance':float(row['guidance'] or 3.0), 'top_k':int(row['top_k'] or 250),
+            'temperature':float(row['temperature'] or 1.0), 'notes':row['notes'],
+        })
     return out
-
 
 def _cache_root(run_dir: Path) -> Path:
     return run_dir.parents[2] / "cache" / "music"

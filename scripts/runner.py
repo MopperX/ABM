@@ -109,15 +109,15 @@ def main() -> int:
                 if "vision" in mc.benchmarks:
                     logical_total += len(mc.modes) * per_config_jobs
         elif bench == "image":
-            logical_total += image_job_count(run_dir, profile, run_dir / "config" / "image.models.tsv")
+            logical_total += image_job_count(run_dir, profile, machine_config)
         elif bench == "speech":
-            logical_total += speech_job_count(run_dir, profile, run_dir / "config" / "speech.models.tsv")
+            logical_total += speech_job_count(run_dir, profile, machine_config)
         elif bench == "music":
-            logical_total += music_job_count(run_dir, profile, run_dir / "config" / "music.models.tsv")
+            logical_total += music_job_count(run_dir, profile, machine_config)
         elif bench == "web":
             per_config_jobs = web_job_count(REPO_ROOT, profile)
             for mc in models:
-                if mc.web:
+                if mc.web and "web" in mc.benchmarks:
                     logical_total += len(mc.modes) * per_config_jobs
         else:
             logical_total += 1
@@ -185,7 +185,7 @@ def main() -> int:
             if bench == "web":
                 web_results=[]
                 for mc in models:
-                    if not mc.web:
+                    if not mc.web or "web" not in mc.benchmarks:
                         continue
                     for mode in mc.modes:
                         if should_stop():
@@ -208,7 +208,7 @@ def main() -> int:
 
             if bench == "image":
                 image_result = run_image(
-                    repo_root=REPO_ROOT, run_dir=run_dir, image_config=run_dir / "config" / "image.models.tsv",
+                    repo_root=REPO_ROOT, run_dir=run_dir, image_config=machine_config,
                     profile=profile, api=defaults.get("OLLAMA_API", "http://127.0.0.1:11434"),
                     seed=int(defaults.get("SEED", "42")), is_completed=is_completed, mark_completed=mark_completed,
                     should_stop=should_stop, set_current=set_current,
@@ -221,7 +221,7 @@ def main() -> int:
 
             if bench == "speech":
                 speech_result = run_speech(
-                    repo_root=REPO_ROOT, run_dir=run_dir, speech_config=run_dir / "config" / "speech.models.tsv",
+                    repo_root=REPO_ROOT, run_dir=run_dir, speech_config=machine_config,
                     profile=profile, is_completed=is_completed, mark_completed=mark_completed,
                     should_stop=should_stop, set_current=set_current,
                 )
@@ -233,7 +233,7 @@ def main() -> int:
 
             if bench == "music":
                 music_result = run_music(
-                    repo_root=REPO_ROOT, run_dir=run_dir, music_config=run_dir / "config" / "music.models.tsv",
+                    repo_root=REPO_ROOT, run_dir=run_dir, music_config=machine_config,
                     profile=profile, is_completed=is_completed, mark_completed=mark_completed,
                     should_stop=should_stop, set_current=set_current,
                 )

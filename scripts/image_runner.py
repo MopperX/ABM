@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from urllib import request, error
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, utc_now
+from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
 
 PRACTICAL={'quick':['I1','I3','I4'],'standard':['I1','I2','I3','I4','I5','I6','I7'],'full':['I1','I2','I3','I4','I5','I6','I7']}
 JUDGE_MODEL='qwen3-vl:4b-instruct'
@@ -14,14 +14,19 @@ WIDTH=512; HEIGHT=512
 def parse_image_models(path:Path)->list[dict[str,Any]]:
     out=[]
     if not path.exists(): return out
-    with path.open(encoding='utf-8',newline='') as f:
-        rows=(x for x in f if x.strip() and not x.lstrip().startswith('#'))
-        r=csv.DictReader(rows,delimiter='\t',fieldnames=['enabled','model','revision','steps','guidance','offload','notes'])
-        for row in r:
-            if (row.get('enabled') or '').strip().lower() not in {'1','true','yes','on'}: continue
-            out.append({'model':row['model'].strip(),'revision':(row['revision'] or '').strip() or 'main','steps':int(row['steps'] or 20),'guidance':float(row['guidance'] or 7.5),'offload':(row['offload'] or 'auto').strip(),'notes':(row['notes'] or '').strip()})
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        if 'image' not in suites or row['backend'].lower() != 'diffusers':
+            continue
+        out.append({
+            'model':row['model'],
+            'revision':row['revision'] or 'main',
+            'steps':int(row['steps'] or 20),
+            'guidance':float(row['guidance'] or 7.5),
+            'offload':row['offload'] or 'auto',
+            'notes':row['notes'],
+        })
     return out
-
 
 def external_counts(run_dir:Path,profile:str)->tuple[int,int]:
     cache=run_dir.parents[2]/'cache'/'image'

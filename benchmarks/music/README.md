@@ -86,26 +86,20 @@ Optionele grotere of melody-capable MusicGen-modellen kunnen per machine in Git 
 
 ## Modelconfig per machine
 
-Musicmodellen staan los van Ollama-, image- en speechmodellen:
+Musicmodellen staan in dezelfde machineconfig als alle andere modellen:
 
 ```text
-config/music-models/<machine>.models.tsv
+config/machines/<machine>.models.tsv
 ```
 
-Kolommen:
+Gebruik `backend=transformers-musicgen` en `suites=music`. Voor MusicGen worden daarnaast `revision`, `capabilities`, `guidance`, `top_k` en `temperature` gebruikt. Voorbeeld (ingekort):
 
 ```text
-enabled  backend  model  revision  capabilities  guidance  top_k  temperature  notes
+true   facebook/musicgen-small   transformers-musicgen  music  standard  false  <revision>  text         ...  3.0  ...  250  1.0  ...
+false  facebook/musicgen-melody  transformers-musicgen  music  standard  false  main        text,melody  ...  3.0  ...  250  1.0  ...
 ```
 
-Voorbeeld:
-
-```text
-true   transformers-musicgen  facebook/musicgen-small   <revision>  text         3.0  250  1.0  baseline
-false  transformers-musicgen  facebook/musicgen-melody  main        text,melody  3.0  250  1.0  optional
-```
-
-De daadwerkelijke bestanden zijn tab-separated. De gekozen musicconfig wordt bij start in `run/config/music.models.tsv` gesnapshot, zodat `resume` niet ongemerkt een later gewijzigde Git-config gebruikt.
+De volledige machineconfig wordt bij start in `run/config/machine.models.tsv` gesnapshot, zodat `resume` niet ongemerkt een later gewijzigde Git-config gebruikt.
 
 ## Profielen
 

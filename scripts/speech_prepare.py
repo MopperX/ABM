@@ -11,6 +11,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
@@ -19,6 +20,9 @@ from typing import Any
 
 import numpy as np
 import soundfile as sf
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.benchlib import parse_model_rows
 
 WHISPER_CPP_TAG = "v1.8.7"
 FLEURS_REV = "73c36572c7f01dea15fe27266e26c29f4cda9a83"
@@ -44,31 +48,24 @@ def atomic(path: Path, data: Any) -> None:
     tmp.replace(path)
 
 
-def machine_name(path: Path) -> str:
-    if path.name == "machine.models.tsv":
-        return "snapshot"
-    return path.name.removesuffix(".models.tsv")
-
-
 def speech_config_for(machine_cfg: Path, repo: Path) -> Path:
-    sibling = machine_cfg.parent / "speech.models.tsv"
-    if machine_cfg.name == "machine.models.tsv" and sibling.exists():
-        return sibling
-    p = repo / "config" / "speech-models" / f"{machine_name(machine_cfg)}.models.tsv"
-    return p if p.exists() else repo / "config" / "speech-models" / "template.models.tsv"
+    return machine_cfg
 
 
 def parse_models(path: Path) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
-    with path.open(encoding="utf-8", newline="") as f:
-        rows = (x for x in f if x.strip() and not x.lstrip().startswith("#"))
-        r = csv.DictReader(rows, delimiter="\t", fieldnames=["enabled", "kind", "id", "model", "language", "speaker", "notes"])
-        for row in r:
-            if (row.get("enabled") or "").strip().lower() not in {"1", "true", "yes", "on"}:
-                continue
-            out.append({k: (v or "").strip() for k, v in row.items()})
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        backend=row['backend'].lower()
+        if 'speech' not in suites or backend not in {'whispercpp','sherpa-onnx-tts'}:
+            continue
+        kind='stt' if backend == 'whispercpp' else 'tts'
+        model=row['model']
+        out.append({
+            'enabled':row['enabled'], 'kind':kind, 'id':model, 'model':model,
+            'language':row['language'], 'speaker':row['speaker'], 'notes':row['notes'],
+        })
     return out
-
 
 def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
     print("+", " ".join(cmd), flush=True)

@@ -5,11 +5,15 @@ import argparse
 import csv
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import soundfile as sf
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.benchlib import parse_model_rows
 
 MUSICBENCH_REPO = "amaai-lab/MusicBench"
 MUSICBENCH_REV = "b141e962aacc19ffd51c15732738040377989203"
@@ -25,37 +29,23 @@ def atomic(path: Path, data: Any) -> None:
     tmp.replace(path)
 
 
-def machine_name(path: Path) -> str:
-    n = path.name
-    return n[:-len(".models.tsv")] if n.endswith(".models.tsv") else path.stem
-
-
 def music_config_for(machine_cfg: Path, repo: Path) -> Path:
-    sibling = machine_cfg.parent / "music.models.tsv"
-    if machine_cfg.name == "machine.models.tsv" and sibling.exists():
-        return sibling
-    name = machine_name(machine_cfg)
-    p = repo / "config" / "music-models" / f"{name}.models.tsv"
-    if not p.exists():
-        p = repo / "config" / "music-models" / "template.models.tsv"
-    return p
+    return machine_cfg
 
 
 def parse_models(path: Path) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
-    with path.open(encoding="utf-8", newline="") as f:
-        rows = (x for x in f if x.strip() and not x.lstrip().startswith("#"))
-        r = csv.DictReader(
-            rows,
-            delimiter="\t",
-            fieldnames=["enabled", "backend", "model", "revision", "capabilities", "guidance", "top_k", "temperature", "notes"],
-        )
-        for row in r:
-            if (row.get("enabled") or "").strip().lower() not in {"1", "true", "yes", "on"}:
-                continue
-            out.append({k: (v or "").strip() for k, v in row.items()})
+    for row in parse_model_rows(path):
+        suites={x.strip() for x in row['suites'].split(',') if x.strip()}
+        if 'music' not in suites or row['backend'].lower() != 'transformers-musicgen':
+            continue
+        out.append({
+            'enabled':row['enabled'], 'backend':row['backend'], 'model':row['model'],
+            'revision':row['revision'] or 'main', 'capabilities':row['capabilities'] or 'text',
+            'guidance':row['guidance'] or '3.0', 'top_k':row['top_k'] or '250',
+            'temperature':row['temperature'] or '1.0', 'notes':row['notes'],
+        })
     return out
-
 
 def even_subset(rows: list[Any], n: int) -> list[tuple[int, Any]]:
     if not rows or n <= 0:

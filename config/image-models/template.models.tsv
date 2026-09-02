@@ -1,4 +1,0 @@
-# enabled	model	revision	steps	guidance	offload	notes
-true	segmind/tiny-sd	d04327a4be912c208dc06ed935a0b1bb64a5611a	20	7.5	none	Universal lightweight 512px baseline (~1.1 GB repo)
-false	stabilityai/sd-turbo	b335f733db09ff60444334351a3bbf6ab4b64332	1	0.0	cpu-offload	Stronger turbo baseline; much larger download
-false	black-forest-labs/FLUX.1-schnell	cfac132b798278bc25d0d8a8608dc4522b13c615	4	0.0	cpu-offload	Optional 12B model; gated on Hugging Face and requires prior license acceptance/token

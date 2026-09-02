@@ -4,9 +4,7 @@ De Image Generation-module meet **generatiesnelheid, resourcegebruik, promptvolg
 
 ## Modellen per machine
 
-Image-modellen worden apart van Ollama beheerd in `config/image-models/<machine>.models.tsv`. Daardoor kun je in de publieke Git per machine eenvoudig modellen aan/uit zetten zonder de LLM-config te vervuilen.
-
-Kolommen: `enabled`, Hugging Face `model`, vaste `revision`, `steps`, `guidance`, `offload`, `notes`.
+Image-modellen staan in hetzelfde machinebestand als de overige modellen: `config/machines/<machine>.models.tsv`. Gebruik `backend=diffusers` en `suites=image`. De image-specifieke kolommen zijn `revision`, `steps`, `guidance` en `offload`; de overige niet-relevante velden mogen leeg blijven.
 
 Standaard staat alleen `segmind/tiny-sd` aan als lichte universele baseline. `sd-turbo` staat klaar als zwaardere optie. FLUX.1-schnell staat als **gated** voorbeeld uit; als je die activeert moet de Hugging Face-licentie vooraf handmatig geaccepteerd zijn en moet een token beschikbaar zijn.
 
