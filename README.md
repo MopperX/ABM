@@ -1,6 +1,6 @@
-# AI Benchmark v4
+# AI BenchMark
 
-AI Benchmark v4 evaluates deployable **machine + model configurations**. It measures the quality a model delivers on a specific machine alongside throughput, latency, energy, memory use, and stability. It is neither a hardware-only benchmark nor a hardware-independent model leaderboard.
+AI Benchmark evaluates deployable **machine + model configurations**. It measures the quality a model delivers on a specific machine alongside throughput, latency, energy, memory use, and stability. It is neither a hardware-only benchmark nor a hardware-independent model leaderboard.
 
 ## Configuration identity
 

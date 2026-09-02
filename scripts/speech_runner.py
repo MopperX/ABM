@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
 
 STT_PRACTICAL={"quick":["S1","S2","S3"],"standard":["S1","S2","S3","S4","S5"],"full":["S1","S2","S3","S4","S5"]}
 TTS_TESTS={"quick":["T1","T2","T4"],"standard":["T1","T2","T3","T4"],"full":["T1","T2","T3","T4"]}
@@ -190,12 +190,12 @@ def run_diarization(prep:dict[str,Any],practical:dict[str,Any],run_dir:Path,is_c
 def _summary_stt(cfg:dict[str,str],rows:list[dict[str,Any]],external:list[dict[str,Any]])->dict[str,Any]:
     allrows=rows+external;wers=[r['accuracy']['wer'] for r in allrows if r.get('accuracy')];rtf=[r['inference']['real_time_factor'] for r in rows if r.get('inference',{}).get('ok')]
     ext_wer=[r['accuracy']['wer'] for r in external if r.get('accuracy')]
-    return {'id':cfg['id'],'model':cfg['model'],'language':cfg['language'],'status':'completed','practical_count':len(rows),'external_count':len(external),'wer_mean_all':statistics.mean(wers) if wers else None,'fleurs_wer_mean':statistics.mean(ext_wer) if ext_wer else None,'practical_rtf_median':statistics.median(rtf) if rtf else None}
+    return {'id':cfg['id'],'model':cfg['model'],'language':cfg['language'],'status':'completed','practical_count':len(rows),'external_count':len(external),'wer_mean_all':statistics.mean(wers) if wers else None,'fleurs_wer_mean':statistics.mean(ext_wer) if ext_wer else None,'practical_rtf_median':statistics.median(rtf) if rtf else None,'performance':{'real_time_factor':distribution_summary(rtf),'wall_seconds':distribution_summary(r.get('inference',{}).get('wall_seconds') for r in rows),'estimated_gpu_energy_wh':distribution_summary(r.get('inference',{}).get('power',{}).get('estimated_gpu_energy_wh') for r in rows)}}
 
 
 def _summary_tts(cfg:dict[str,str],rows:list[dict[str,Any]],provider:str,load_s:float)->dict[str,Any]:
     rtf=[r['generation']['real_time_factor'] for r in rows if r.get('generation')];wers=[r.get('intelligibility',{}).get('wer') for r in rows if r.get('intelligibility',{}).get('wer') is not None]
-    return {'id':cfg['id'],'model':cfg['model'],'provider':provider,'load_seconds':load_s,'status':'completed','tests':len(rows),'rtf_median':statistics.median(rtf) if rtf else None,'backtranscription_wer_mean':statistics.mean(wers) if wers else None}
+    return {'id':cfg['id'],'model':cfg['model'],'provider':provider,'load_seconds':load_s,'status':'completed','tests':len(rows),'rtf_median':statistics.median(rtf) if rtf else None,'backtranscription_wer_mean':statistics.mean(wers) if wers else None,'performance':{'real_time_factor':distribution_summary(rtf),'generation_seconds':distribution_summary(r.get('generation',{}).get('seconds') for r in rows),'load_seconds':distribution_summary([load_s]),'estimated_gpu_energy_wh':distribution_summary(r.get('generation',{}).get('power',{}).get('estimated_gpu_energy_wh') for r in rows)}}
 
 
 def run_speech(*,repo_root:Path,run_dir:Path,speech_config:Path,profile:str,is_completed,mark_completed,should_stop,set_current)->dict[str,Any]:

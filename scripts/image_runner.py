@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from urllib import request, error
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
 
 PRACTICAL={'quick':['I1','I3','I4'],'standard':['I1','I2','I3','I4','I5','I6','I7'],'full':['I1','I2','I3','I4','I5','I6','I7']}
 JUDGE_MODEL='qwen3-vl:4b-instruct'
@@ -230,4 +230,4 @@ def _summary_cfg(cfg,generator,rows,gene=None,hpsrows=None):
     for style in sorted({r.get('style') for r in hpsrows if r.get('style')}):
         vals=[r.get('hps_score') for r in hpsrows if r.get('style')==style and r.get('hps_score') is not None]
         by_style[style]=statistics.mean(vals) if vals else None
-    return {'model':cfg['model'],'revision':cfg['revision'],'resolved_revision':getattr(generator,'resolved_revision',None),'device':getattr(generator,'device',None),'load_seconds':getattr(generator,'load_seconds',None),'status':'completed','practical':{'items':len(rows),'judge_mean':statistics.mean(practical_scores) if practical_scores else None},'geneval2_local_vqa':{'items':len(gene),'atoms_passed':gene_passed,'atoms_total':gene_total,'atom_accuracy':gene_passed/gene_total if gene_total else None},'hps_v2_1':{'items':len(hpsrows),'score_mean':statistics.mean(hs) if hs else None,'score_median':statistics.median(hs) if hs else None,'by_style':by_style},'performance':{'generated_images':len(times),'generation_seconds_median':statistics.median(times) if times else None,'images_per_minute_from_median':60/statistics.median(times) if times and statistics.median(times)>0 else None,'total_measured_energy_wh':sum(pows) if pows else None}}
+    return {'model':cfg['model'],'revision':cfg['revision'],'resolved_revision':getattr(generator,'resolved_revision',None),'device':getattr(generator,'device',None),'load_seconds':getattr(generator,'load_seconds',None),'status':'completed','practical':{'items':len(rows),'judge_mean':statistics.mean(practical_scores) if practical_scores else None},'geneval2_local_vqa':{'items':len(gene),'atoms_passed':gene_passed,'atoms_total':gene_total,'atom_accuracy':gene_passed/gene_total if gene_total else None},'hps_v2_1':{'items':len(hpsrows),'score_mean':statistics.mean(hs) if hs else None,'score_median':statistics.median(hs) if hs else None,'by_style':by_style},'performance':{'generated_images':len(times),'generation_seconds_median':statistics.median(times) if times else None,'generation_seconds':distribution_summary(times),'load_seconds':distribution_summary([getattr(generator,'load_seconds',None)]),'estimated_gpu_energy_wh':distribution_summary(pows),'images_per_minute_from_median':60/statistics.median(times) if times and statistics.median(times)>0 else None,'total_measured_energy_wh':sum(pows) if pows else None}}

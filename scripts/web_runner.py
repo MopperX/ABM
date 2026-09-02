@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib import error, parse, request
 
-from lib.benchlib import PowerSampler, atomic_json, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
 
 PROFILE_REPEATS = {"quick": 1, "standard": 3, "full": 5}
 PROFILE_TESTS = {"quick": ["W1", "W2"], "standard": ["W1", "W2", "W3"], "full": ["W1", "W2", "W3"]}
@@ -421,6 +421,7 @@ def run_web(
                 "valid_fetched_citations": valid_citations,
                 "final_answer": final_answer,
                 "searxng": prep,
+                "performance": call_performance_summary(calls),
             }
             atomic_json(out_dir / "calls.json", calls)
             atomic_json(result_path, result)
@@ -437,6 +438,8 @@ def run_web(
         })
 
     rows = [r for t in summaries for r in t["repeats"]]
+    task_wall = [r.get("performance",{}).get("task_totals",{}).get("wall_seconds") for r in rows]
+    task_energy = [r.get("performance",{}).get("task_totals",{}).get("estimated_gpu_energy_wh") for r in rows]
     return {
         "stopped": False,
         "model": model,
@@ -447,4 +450,5 @@ def run_web(
         "passed_runs": sum(1 for r in rows if r.get("pass") is True),
         "total_runs": len(rows),
         "unsupported_runs": sum(1 for r in rows if r.get("unsupported")),
+        "performance": {"task_wall_seconds": distribution_summary(task_wall), "task_estimated_gpu_energy_wh": distribution_summary(task_energy)},
     }

@@ -3,7 +3,7 @@ import base64, json, re, statistics, time
 from pathlib import Path
 from typing import Any, Callable
 from urllib import request, error
-from lib.benchlib import PowerSampler, atomic_json, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
 
 REPEATS={'quick':1,'standard':3,'full':5}
 PRACTICAL={'quick':['V1','V4','V5','V7'],'standard':['V1','V2','V3','V4','V5','V6','V7'],'full':['V1','V2','V3','V4','V5','V6','V7']}
@@ -111,4 +111,5 @@ def _ext_summary(rows):
 def _summary(rows):
     if not rows:return {'items':0}
     p=sum(bool(r.get('pass')) for r in rows);tps=[r['metrics'].get('generation_tokens_per_second') for r in rows if r.get('metrics',{}).get('generation_tokens_per_second') is not None]
-    return {'items':len(rows),'passed':p,'pass_rate':p/len(rows),'generation_tps_median':statistics.median(tps) if tps else None}
+    calls=[{'metrics':r.get('metrics',{}),'power':r.get('power',{})} for r in rows]
+    return {'items':len(rows),'passed':p,'pass_rate':p/len(rows),'generation_tps_median':statistics.median(tps) if tps else None,'performance':call_performance_summary(calls),'repeat_generation_tps':distribution_summary(tps)}

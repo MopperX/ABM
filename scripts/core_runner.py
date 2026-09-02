@@ -5,7 +5,7 @@ import statistics
 from pathlib import Path
 from typing import Any, Callable
 
-from lib.benchlib import atomic_json, contract_metrics, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
+from lib.benchlib import atomic_json, call_performance_summary, contract_metrics, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
 from scripts.core_external import external_job_count, run_external
 
 SYSTEM_PROMPT = (
@@ -98,6 +98,7 @@ def run_core(
                 "completed_at": utc_now(), **contract, "pass": contract["full_contract_pass"],
                 "checks": checks, "final_answer": answer, "api_call_count": len(api_calls),
                 "generation_tps_median": statistics.median(tps) if tps else None,
+                "performance": call_performance_summary(api_calls),
             }
             atomic_json(test_dir / "calls.json", api_calls)
             atomic_json(summary_path, result)

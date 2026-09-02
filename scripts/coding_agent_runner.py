@@ -8,7 +8,7 @@ import statistics
 from pathlib import Path
 from typing import Any, Callable
 
-from lib.benchlib import atomic_json, contract_metrics, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
+from lib.benchlib import atomic_json, call_performance_summary, contract_metrics, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now, wilson_interval
 from scripts.agent_harness import init_workspace, run_agent_task
 from scripts.livecodebench_evalscope import run_livecodebench
 
@@ -244,7 +244,8 @@ def _summarize_chat(rows:list[dict[str,Any]])->dict[str,Any]:
     wall=[c["metrics"].get("wall_seconds") for c in calls if c["metrics"].get("wall_seconds") is not None]
     passed=sum(bool(r["pass"]) for r in rows)
     return {"items":len(rows),"passed":passed,"pass_rate":passed/len(rows),"confidence_interval_95":wilson_interval(passed,len(rows)),"per_test":by,
-            "performance":{"generation_tps_median":statistics.median(tps) if tps else None,"wall_seconds_median":statistics.median(wall) if wall else None}}
+            "performance":{"generation_tps_median":statistics.median(tps) if tps else None,"wall_seconds_median":statistics.median(wall) if wall else None,
+                           "calls":call_performance_summary(calls),"repeat_generation_tps":distribution_summary(tps),"repeat_wall_seconds":distribution_summary(wall)}}
 
 
 def _summarize_agents(rows:list[dict[str,Any]])->dict[str,Any]:

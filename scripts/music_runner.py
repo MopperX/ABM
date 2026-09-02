@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
 
 PRACTICAL = {
     "quick": ["M1", "M3", "M6"],
@@ -416,6 +416,9 @@ def _summary(cfg: dict[str, Any], generator: MusicGenGenerator | None, practical
         "performance": {
             "generated_items": len(times),
             "generation_seconds_median": statistics.median(times) if times else None,
+            "generation_seconds": distribution_summary(times),
+            "real_time_factor": distribution_summary(r.get("generation", {}).get("real_time_factor") for r in allrows),
+            "estimated_gpu_energy_wh": distribution_summary(energy),
             "audio_seconds_generated": sum(float(x or 0) for x in audio_secs),
             "audio_seconds_per_generation_second": (sum(float(x or 0) for x in audio_secs) / sum(times)) if times and sum(times) > 0 else None,
             "total_measured_energy_wh": sum(energy) if energy else None,

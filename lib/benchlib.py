@@ -220,6 +220,24 @@ def distribution_summary(values: Iterable[float]) -> dict[str, float | int | Non
     }
 
 
+def call_performance_summary(calls: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Build the standard additive performance view from raw call records."""
+    rows = list(calls)
+    metrics = [row.get("metrics") or {} for row in rows]
+    powers = [row.get("power") or {} for row in rows]
+    task_wall = sum(float(m.get("wall_seconds") or 0) for m in metrics)
+    task_energy = sum(float(p.get("estimated_gpu_energy_wh") or p.get("approx_energy_wh") or 0) for p in powers if p.get("available"))
+    return {
+        "generation_tokens_per_second": distribution_summary(m.get("generation_tokens_per_second") for m in metrics),
+        "prompt_tokens_per_second": distribution_summary(m.get("prompt_tokens_per_second") for m in metrics),
+        "wall_seconds": distribution_summary(m.get("wall_seconds") for m in metrics),
+        "load_seconds": distribution_summary((float(m["load_duration_ns"]) / 1e9) if m.get("load_duration_ns") is not None else None for m in metrics),
+        "estimated_gpu_energy_wh": distribution_summary(p.get("estimated_gpu_energy_wh") for p in powers if p.get("available")),
+        "joules_per_output_token": distribution_summary(p.get("joules_per_output_token") for p in powers if p.get("available")),
+        "task_totals": {"calls": len(rows), "wall_seconds": task_wall, "estimated_gpu_energy_wh": task_energy if any(p.get("available") for p in powers) else None},
+    }
+
+
 def mode_to_think(mode: str) -> tuple[bool, Any]:
     m = mode.strip().lower()
     if m == "standard":

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib import request, error
 
-from lib.benchlib import PowerSampler, atomic_json, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
 
 EMBED_MODEL = "embeddinggemma"
 TOP_K = 5
@@ -268,4 +268,5 @@ def _summarize(rows:list[dict[str,Any]]) -> dict[str,Any]:
             x=c.get("metrics",{}).get("generation_tokens_per_second"); w=c.get("metrics",{}).get("wall_seconds")
             if x is not None:tps.append(x)
             if w is not None:wall.append(w)
-    return {"items":len(rows),"passed":sum(bool(r["pass"]) for r in rows),"pass_rate":sum(bool(r["pass"]) for r in rows)/len(rows),"per_test":by,"performance":{"generation_tps_median":statistics.median(tps) if tps else None,"wall_seconds_median":statistics.median(wall) if wall else None}}
+    calls=[c for r in rows for c in r.get("calls",[])]
+    return {"items":len(rows),"passed":sum(bool(r["pass"]) for r in rows),"pass_rate":sum(bool(r["pass"]) for r in rows)/len(rows),"per_test":by,"performance":{"generation_tps_median":statistics.median(tps) if tps else None,"wall_seconds_median":statistics.median(wall) if wall else None,"calls":call_performance_summary(calls),"repeat_generation_tps":distribution_summary(tps),"repeat_wall_seconds":distribution_summary(wall)}}
