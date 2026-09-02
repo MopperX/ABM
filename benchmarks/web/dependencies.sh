@@ -31,7 +31,7 @@ else
 fi
 
 if [[ ! -d "$SRC/.git" ]]; then
-  echo "SearXNG broncode downloaden (eenmalig)"
+  echo "Downloading SearXNG source code (one time)"
   rm -rf "$SRC"
   git clone --quiet https://github.com/searxng/searxng.git "$SRC"
 fi
@@ -88,7 +88,7 @@ cat > "$SETTINGS" <<EOF2
 use_default_settings: true
 general:
   debug: false
-  instance_name: "AI Benchmark v4 SearXNG"
+  instance_name: "Benchmark SearXNG"
 search:
   safe_search: 0
   formats:
@@ -99,7 +99,7 @@ server:
   port: $PORT
   limiter: false
   image_proxy: false
-  secret_key: "ai-benchmark-v4-local-only-$PORT"
+  secret_key: "benchmark-local-only-$PORT"
 valkey:
   url: false
 EOF2
@@ -113,7 +113,7 @@ if ! valid_search; then
     oldpid="$(cat "$CACHE/searxng.pid" 2>/dev/null || true)"
     [[ -n "$oldpid" ]] && kill "$oldpid" 2>/dev/null || true
   fi
-  echo "Lokale SearXNG starten op $URL"
+  echo "Starting local SearXNG at $URL"
   nohup env SEARXNG_SETTINGS_PATH="$SETTINGS" "$VENV/bin/python" -m searx.webapp >"$LOG" 2>&1 < /dev/null &
   echo $! > "$CACHE/searxng.pid"
   for _ in {1..45}; do

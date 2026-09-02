@@ -11,12 +11,30 @@ export BENCH_PROFILE
 export BENCH_MACHINE_CONFIG="$MACHINE_CONFIG"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-/Library/Application Support/ai-benchmark-v4}"
+  BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-$HOME/Library/Application Support/ai-benchmark}"
 else
-  BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-/var/lib/ai-benchmark-v4}"
+  BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark}"
 fi
 export BENCH_RESULTS_ROOT
 export BENCH_CACHE_DIR="${BENCH_CACHE_DIR:-$BENCH_RESULTS_ROOT/cache}"
+BENCH_MIN_FREE_GB="${BENCH_MIN_FREE_GB:-20}"
+
+[[ "$BENCH_MIN_FREE_GB" =~ ^[0-9]+$ ]] || {
+  echo "ERROR: BENCH_MIN_FREE_GB must be a non-negative whole number." >&2
+  exit 2
+}
+available_kib="$(df -Pk "$BENCH_RESULTS_ROOT" | awk 'NR==2 {print $4}')"
+[[ "$available_kib" =~ ^[0-9]+$ ]] || {
+  echo "ERROR: could not determine free disk space for $BENCH_RESULTS_ROOT." >&2
+  exit 1
+}
+required_kib=$((BENCH_MIN_FREE_GB * 1024 * 1024))
+if ((available_kib < required_kib)); then
+  available_gb=$((available_kib / 1024 / 1024))
+  echo "ERROR: only ${available_gb} GiB is free in $BENCH_RESULTS_ROOT; ${BENCH_MIN_FREE_GB} GiB is required." >&2
+  echo "Set BENCH_MIN_FREE_GB to override the preflight threshold." >&2
+  exit 1
+fi
 
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
 
@@ -33,6 +51,16 @@ if ! need_cmd ollama; then
   exit 1
 fi
 
+"$REPO_ROOT/.venv/bin/python" - "$REPO_ROOT" <<'PY'
+import sys
+
+sys.path.insert(0, sys.argv[1])
+from lib.benchlib import host_snapshot
+
+for warning in host_snapshot()["readiness"]["warnings"]:
+    print(f"WARNING: host readiness: {warning}", file=sys.stderr)
+PY
+
 # Ensure Ollama server is reachable before detaching the benchmark.
 if ! curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; then
   echo "Ollama is not running; starting the service..."
@@ -42,7 +70,7 @@ if ! curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; 
     $SUDO systemctl start ollama >/dev/null 2>&1 || true
   fi
   if ! curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; then
-    nohup ollama serve >/tmp/ai-benchmark-v4-ollama.log 2>&1 &
+    nohup ollama serve >/tmp/benchmark-ollama.log 2>&1 &
   fi
   for _ in {1..30}; do
     curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1 && break
@@ -88,10 +116,6 @@ for r in parse_model_rows(path):
     if relevant:
         models.append(r['model'])
 for model in dict.fromkeys(models):
-    chk = subprocess.run(['ollama','show',model], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if chk.returncode != 0:
-        print(f'Model is missing; downloading: {model}', flush=True)
-        subprocess.run(['ollama','pull',model], check=True)
-    else:
-        print(f'Model is available: {model}')
+  print(f'Refreshing model tag: {model}', flush=True)
+  subprocess.run(['ollama', 'pull', model], check=True)
 PY

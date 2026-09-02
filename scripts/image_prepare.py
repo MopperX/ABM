@@ -49,9 +49,8 @@ def even_subset(rows,n):
 
 
 def ensure_judge():
-    if subprocess.run(['ollama','show',JUDGE_MODEL],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0:
-        print(f'Image evaluator is missing; downloading: {JUDGE_MODEL}',flush=True)
-        subprocess.run(['ollama','pull',JUDGE_MODEL],check=True)
+    print(f'Refreshing image evaluator model: {JUDGE_MODEL}',flush=True)
+    subprocess.run(['ollama','pull',JUDGE_MODEL],check=True)
 
 
 def prepare_models(models,cache:Path):
@@ -113,5 +112,5 @@ def main():
     cfg=image_config_for(Path(a.machine_config),repo);models=parse_models(cfg)
     ensure_judge(); prepared=prepare_models(models,cache);atomic(cache/'models'/f'{machine_name(Path(a.machine_config))}.json',{'image_model_config':str(cfg),'models':prepared})
     prepare_geneval(a.profile,cache);prepare_hps(a.profile,cache)
-    print(f'Image preflight gereed: {len(prepared)} image-model(len), GenEval2 + HPS manifests gecached.')
+    print(f'Image preflight complete: {len(prepared)} image model(s), GenEval2 + HPS manifests cached.')
 if __name__=='__main__': main()

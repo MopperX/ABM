@@ -110,7 +110,7 @@ def _normalise_musicbench_rows(raw: Any) -> list[dict[str, Any]]:
                 return [x for x in raw[key] if isinstance(x, dict)]
         if all(isinstance(v, dict) for v in raw.values()):
             return list(raw.values())
-    raise RuntimeError("Onbekend MusicBench JSON-formaat")
+    raise RuntimeError("Unknown MusicBench JSON format")
 
 
 def prepare_musicbench(profile: str, cache: Path) -> dict[str, Any]:
@@ -215,7 +215,7 @@ def main() -> None:
             "melody_fixture": melody,
         },
     )
-    print(f"Music preflight gereed: {len(prepared)} model(len), CLAP, {mb['count']} MusicBench-prompts.")
+    print(f"Music preflight complete: {len(prepared)} model(s), CLAP, {mb['count']} MusicBench prompts.")
 
 
 if __name__ == "__main__":

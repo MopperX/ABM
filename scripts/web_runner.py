@@ -155,7 +155,7 @@ def _search(searx_url: str, query: str, max_results: int) -> dict[str, Any]:
     max_results = max(1, min(int(max_results or 6), 10))
     params = parse.urlencode({"q": query, "format": "json", "language": "all", "safesearch": 0})
     url = searx_url.rstrip("/") + "/search?" + params
-    req = request.Request(url, headers={"User-Agent": "AI-Benchmark-v4/1.0"})
+    req = request.Request(url, headers={"User-Agent": "Benchmark/1.0"})
     with request.urlopen(req, timeout=20) as resp:
         raw = resp.read(MAX_FETCH_BYTES)
     obj = json.loads(raw.decode("utf-8", errors="replace"))
@@ -180,7 +180,7 @@ def _fetch(url: str) -> dict[str, Any]:
     req = request.Request(
         safe,
         headers={
-            "User-Agent": "Mozilla/5.0 (compatible; AI-Benchmark-v4/1.0; +https://example.invalid)",
+            "User-Agent": "Mozilla/5.0 (compatible; Benchmark/1.0; +https://example.invalid)",
             "Accept": "text/html,application/xhtml+xml,text/plain,application/json;q=0.9,*/*;q=0.5",
         },
     )

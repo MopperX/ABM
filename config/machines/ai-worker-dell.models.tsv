@@ -13,7 +13,7 @@ true	qwen3-vl:4b-instruct	ollama	vision	standard	false										Official no-thin
 true	qwen3-vl:4b-thinking	ollama	vision	standard	false										Official thinking Vision baseline; 3.3 GB
 false	qwen3-vl:8b-instruct	ollama	vision	standard	false										Stronger no-thinking Vision comparison
 false	qwen3-vl:8b-thinking	ollama	vision	standard	false										Stronger thinking Vision comparison
-true	segmind/tiny-sd	diffusers	image	standard	false	d04327a4be912c208dc06ed935a0b1bb64a5611a		20	7.5	none					Universal lightweight 512px baseline (~1.1 GB repo)
+true	segmind/tiny-sd	diffusers	image	standard	false	main		20	7.5	none					Universal lightweight 512px baseline (~1.1 GB repo)
 false	stabilityai/sd-turbo	diffusers	image	standard	false	b335f733db09ff60444334351a3bbf6ab4b64332		1	0.0	cpu-offload					Stronger turbo baseline; much larger download
 false	black-forest-labs/FLUX.1-schnell	diffusers	image	standard	false	cfac132b798278bc25d0d8a8608dc4522b13c615		4	0.0	cpu-offload					Optional 12B model; gated on Hugging Face and requires prior license acceptance/token
 true	small	whispercpp	speech	standard	false		stt						nl		Multilingual whisper.cpp baseline
@@ -21,6 +21,6 @@ false	medium	whispercpp	speech	standard	false		stt						nl		Stronger multilingua
 false	large-v3-turbo	whispercpp	speech	standard	false		stt						nl		Large fast Whisper comparison; enable on capable workers
 true	vits-piper-nl_NL-alex-medium	sherpa-onnx-tts	speech	standard	false		tts						nl_NL	0	Dutch single-speaker VITS/Piper baseline through sherpa-onnx
 false	vits-piper-nl_NL-pim-medium	sherpa-onnx-tts	speech	standard	false		tts						nl_NL	0	Second Dutch voice for model comparison
-true	facebook/musicgen-small	transformers-musicgen	music	standard	false	f37b0c0576a5fb6891df4a25c80680af72c11e1e	text		3.0		250	1.0			Universal MusicGen baseline; ~300M parameters, CC-BY-NC-4.0
+true	facebook/musicgen-small	transformers-musicgen	music	standard	false	main	text		3.0		250	1.0			Universal MusicGen baseline; ~300M parameters, CC-BY-NC-4.0
 false	facebook/musicgen-melody	transformers-musicgen	music	standard	false	main	text,melody		3.0		250	1.0			Optional melody-conditioned MusicGen model; enable on machines with enough memory
 false	facebook/musicgen-medium	transformers-musicgen	music	standard	false	main	text		3.0		250	1.0			Optional larger MusicGen model; AudioCraft documentation recommends >=16 GB GPU memory for medium models

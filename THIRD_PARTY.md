@@ -2,7 +2,7 @@
 
 The original benchmark code in this repository is licensed under the **Apache License 2.0**; see the top-level `LICENSE` file. The items documented below are third-party works and remain subject to their own upstream licenses.
 
-AI Benchmark v4 does not claim authorship of the external benchmark datasets/evaluators used by Core LLM.
+Benchmark does not claim authorship of the external benchmark datasets/evaluators used by Core LLM.
 They are downloaded during preflight into the persistent benchmark cache outside this repository.
 
 ## IFEval
@@ -10,14 +10,14 @@ They are downloaded during preflight into the persistent benchmark cache outside
 - Project: Google Research Instruction Following Evaluation (IFEval)
 - Source: https://github.com/google-research/google-research/tree/master/instruction_following_eval
 - License: Apache License 2.0 in the upstream Google Research repository
-- AI Benchmark v4 uses the upstream prompts and strict/loose evaluator.
+- Benchmark uses the upstream prompts and strict/loose evaluator.
 
 ## TruthfulQA
 
 - Project: TruthfulQA
 - Source: https://github.com/sylinrl/TruthfulQA
 - License: Apache License 2.0 upstream
-- AI Benchmark v4 uses the recommended Jan-2025 binary-choice setup based on `Best Answer` and `Best Incorrect Answer`.
+- Benchmark uses the recommended Jan-2025 binary-choice setup based on `Best Answer` and `Best Incorrect Answer`.
 
 ## MMLU-Pro
 
@@ -25,7 +25,7 @@ They are downloaded during preflight into the persistent benchmark cache outside
 - Dataset: https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro
 - Source code: https://github.com/TIGER-AI-Lab/MMLU-Pro
 - Dataset license listed by Hugging Face: MIT
-- AI Benchmark v4 uses objective answer accuracy and a deterministic mini subset for quick/standard profiles.
+- Benchmark uses objective answer accuracy and a deterministic mini subset for quick/standard profiles.
 
 Every run records the external source revisions/hashes used so results remain auditable.
 
@@ -70,7 +70,7 @@ Every run records the external source revisions/hashes used so results remain au
 - Source: https://github.com/facebookresearch/GenEval2
 - License: CC BY-NC 4.0 upstream
 - The benchmark downloads the official prompt/VQA data during preflight at pinned revision `a6e82d2289e8d418f27f0adee77908b07060eea3`.
-- AI Benchmark v4 uses the official prompts/atom ground truth but a fixed local Ollama Vision judge for universal execution. Results are therefore labelled `GenEval2 local-VQA`, not official Soft-TIFA.
+- Benchmark uses the official prompts/atom ground truth but a fixed local Ollama Vision judge for universal execution. Results are therefore labelled `GenEval2 local-VQA`, not official Soft-TIFA.
 
 ### HPS v2.1
 
@@ -124,7 +124,7 @@ The fixed diarization pipeline downloads the sherpa-onnx Pyannote segmentation c
 - Benchmark revision: `f37b0c0576a5fb6891df4a25c80680af72c11e1e`
 - Upstream model license: CC-BY-NC-4.0.
 - Optional MusicGen models are downloaded directly from their Hugging Face repositories and remain subject to their upstream licenses.
-- AI Benchmark v4 redistributes no MusicGen weights.
+- Benchmark redistributes no MusicGen weights.
 
 ### MusicBench
 
@@ -132,8 +132,8 @@ The fixed diarization pipeline downloads the sherpa-onnx Pyannote segmentation c
 - File used: `MusicBench_test_B.json`
 - Benchmark revision: `b141e962aacc19ffd51c15732738040377989203`
 - Dataset card license: CC-BY-SA-3.0.
-- AI Benchmark v4 downloads only the test JSON metadata/prompts; it does not download or redistribute the 16.8 GB MusicBench audio archive.
-- The local CLAP/BPM/key evaluation in AI Benchmark v4 is not presented as the official Mustango/MusicBench leaderboard metric.
+- Benchmark downloads only the test JSON metadata/prompts; it does not download or redistribute the 16.8 GB MusicBench audio archive.
+- The local CLAP/BPM/key evaluation in Benchmark is not presented as the official Mustango/MusicBench leaderboard metric.
 
 ### LAION CLAP
 

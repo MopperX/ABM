@@ -6,7 +6,7 @@ PROFILE="${BENCH_PROFILE:-standard}"
 : "${BENCH_CACHE_DIR:?BENCH_CACHE_DIR missing}"
 : "${BENCH_MACHINE_CONFIG:?BENCH_MACHINE_CONFIG missing}"
 
-# Current stable cross-platform stack as of benchmark v4 build.
+# Current stable cross-platform stack.
 "$PIP" install -q \
   'torch==2.13.0' 'torchvision==0.28.0' \
   'diffusers==0.40.0' 'transformers>=4.57,<5' 'accelerate>=1,<2' \

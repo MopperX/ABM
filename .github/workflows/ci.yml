@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check "uv==0.12.9"
+
+      - name: Validate Bash syntax
+        shell: bash
+        run: find . -name '*.sh' -print0 | xargs -0 -n 1 bash -n
+
+      - name: Compile Python sources
+        run: python -m compileall -q lib scripts
+
+      - name: Validate Core dependency lock
+        shell: bash
+        run: |
+          generated_lock="$RUNNER_TEMP/core-requirements.lock"
+          uv pip compile --universal --python-version 3.14 --generate-hashes \
+            --output-file "$generated_lock" benchmarks/core/requirements.txt >/dev/null
+          sed '1,2d' benchmarks/core/requirements.lock > "$RUNNER_TEMP/committed-lock"
+          sed '1,2d' "$generated_lock" > "$RUNNER_TEMP/generated-lock"
+          diff -u "$RUNNER_TEMP/committed-lock" "$RUNNER_TEMP/generated-lock"
+
+      - name: Validate machine configurations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          from lib.benchlib import parse_model_rows
+
+          configs = sorted(Path("config/machines").glob("*.models.tsv"))
+          if not configs:
+              raise SystemExit("No machine configurations found.")
+          for config in configs:
+              rows = parse_model_rows(config, enabled_only=False)
+              if not rows:
+                  raise SystemExit(f"Machine configuration has no model rows: {config}")
+              for row in parse_model_rows(config):
+                  if row["backend"] in {"diffusers", "transformers-musicgen"} and row["revision"] != "main":
+                      raise SystemExit(f"Enabled generation model must use revision=main: {config} ({row['model']})")
+          PY
+
+      - name: Smoke test command help
+        shell: bash
+        run: |
+          ./benchmark --help | grep -F -- "--without-livecodebench"
+          ./bootstrap.sh --help | grep -F -- "--update"

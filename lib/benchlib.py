@@ -111,6 +111,25 @@ def host_snapshot() -> dict[str, Any]:
         except Exception:
             return None
 
+    def read_text(path: Path) -> str | None:
+        try:
+            return path.read_text(encoding="utf-8", errors="ignore").strip() or None
+        except OSError:
+            return None
+
+    def meminfo_bytes(name: str) -> int | None:
+        meminfo = read_text(Path("/proc/meminfo"))
+        if meminfo is None:
+            return None
+        for line in meminfo.splitlines():
+            key, _, value = line.partition(":")
+            if key == name:
+                try:
+                    return int(value.strip().split()[0]) * 1024
+                except (IndexError, ValueError):
+                    return None
+        return None
+
     system = platform.system()
     snapshot: dict[str, Any] = {
         "hostname": socket.gethostname(),
@@ -121,20 +140,54 @@ def host_snapshot() -> dict[str, Any]:
         "python": platform.python_version(),
         "captured_at": utc_now(),
     }
+    cpu_count = os.cpu_count() or 1
+    try:
+        load_average = os.getloadavg()
+    except OSError:
+        load_average = None
+    readiness: dict[str, Any] = {"cpu_count": cpu_count, "load_average": load_average, "warnings": []}
+    if load_average is not None and load_average[0] > cpu_count * 0.75:
+        readiness["warnings"].append("one-minute CPU load exceeds 75% of logical CPUs")
+    if system == "Linux":
+        readiness["memory_available_bytes"] = meminfo_bytes("MemAvailable")
+        if readiness["memory_available_bytes"] is not None and readiness["memory_available_bytes"] < 2 * 1024**3:
+            readiness["warnings"].append("less than 2 GiB of memory is available")
+    docker_containers = cmd(["docker", "ps", "-q"])
+    readiness["active_docker_containers"] = docker_containers.splitlines() if docker_containers else []
+    if readiness["active_docker_containers"]:
+        readiness["warnings"].append("Docker has active containers")
+    gpu_processes = cmd(["nvidia-smi", "--query-compute-apps=pid,process_name,used_memory", "--format=csv,noheader"])
+    readiness["active_nvidia_compute_processes"] = gpu_processes.splitlines() if gpu_processes else []
+    if readiness["active_nvidia_compute_processes"]:
+        readiness["warnings"].append("NVIDIA GPU has active compute processes")
+    snapshot["readiness"] = readiness
+    snapshot["docker_version"] = cmd(["docker", "version", "--format", "{{.Server.Version}}"])
     if system == "Linux":
         snapshot["kernel"] = cmd(["uname", "-a"])
         snapshot["cpu"] = cmd(["bash", "-lc", "lscpu | awk -F: '/Model name/ {sub(/^[ \\t]+/,\"\",$2); print $2; exit}'"])
         snapshot["memory"] = cmd(["bash", "-lc", "free -b | awk '/Mem:/ {print $2}'"])
         snapshot["nvidia_smi"] = cmd(["nvidia-smi", "--query-gpu=name,memory.total,driver_version,pci.link.gen.current,pci.link.width.current", "--format=csv,noheader"])
-        try:
-            if "microsoft" in Path("/proc/version").read_text(encoding="utf-8", errors="ignore").lower():
-                snapshot["wsl"] = True
-        except Exception:
-            pass
+        kernel_release = read_text(Path("/proc/sys/kernel/osrelease")) or ""
+        proc_version = read_text(Path("/proc/version")) or ""
+        snapshot["wsl"] = "microsoft" in kernel_release.lower() or "microsoft" in proc_version.lower() or Path("/etc/wsl.conf").exists()
+        snapshot["swap_total_bytes"] = meminfo_bytes("SwapTotal")
+        snapshot["zram_devices"] = [path.name for path in sorted(Path("/sys/block").glob("zram*"))]
+        governors = {value for path in Path("/sys/devices/system/cpu").glob("cpu*/cpufreq/scaling_governor") if (value := read_text(path))}
+        snapshot["cpu_governors"] = sorted(governors)
+        power_supplies = []
+        for supply in sorted(Path("/sys/class/power_supply").glob("*")):
+            supply_type = read_text(supply / "type")
+            online = read_text(supply / "online")
+            status = read_text(supply / "status")
+            capacity = read_text(supply / "capacity")
+            if supply_type or online or status or capacity:
+                power_supplies.append({"name": supply.name, "type": supply_type, "online": online, "status": status, "capacity_percent": capacity})
+        snapshot["power_supplies"] = power_supplies
     elif system == "Darwin":
         snapshot["cpu"] = cmd(["sysctl", "-n", "machdep.cpu.brand_string"]) or cmd(["sysctl", "-n", "hw.model"])
         snapshot["memory"] = cmd(["sysctl", "-n", "hw.memsize"])
         snapshot["macos"] = cmd(["sw_vers", "-productVersion"])
+        snapshot["power_source"] = cmd(["pmset", "-g", "batt"])
     snapshot["ollama_version"] = cmd(["ollama", "--version"])
     return snapshot
 

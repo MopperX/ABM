@@ -4,21 +4,20 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PY="$REPO_ROOT/.venv/bin/python"
 PIP="$REPO_ROOT/.venv/bin/pip"
+LOCKFILE="$REPO_ROOT/benchmarks/core/requirements.lock"
 RESULTS_ROOT="${BENCH_RESULTS_ROOT:?BENCH_RESULTS_ROOT is required}"
 CACHE_ROOT="${BENCH_CACHE_DIR:-$RESULTS_ROOT/cache}/core"
 mkdir -p "$CACHE_ROOT"
 
 IFEVAL_REVISION="641dd8404c65862627fa38865775694ee8b5c572"
 MMLU_PRO_REVISION="24ac2da5bb7c7b42ea1a984c6b535e35a73d30b3"
+TRUTHFULQA_REVISION="d71c110897f5d31c5d7f309e7bc316c152f6f031"
 
 printf '\n==> Core externe benchmarkdependencies controleren\n'
-if ! "$PY" -c 'import absl, langdetect, nltk, immutabledict, datasets' >/dev/null 2>&1; then
-  "$PIP" install -r "$REPO_ROOT/benchmarks/core/requirements.txt"
-else
-  echo "Python dependencies aanwezig."
-fi
+[[ -f "$LOCKFILE" ]] || { echo "ERROR: Core dependency lockfile is missing: $LOCKFILE" >&2; exit 1; }
+"$PIP" install --require-hashes -r "$LOCKFILE"
 
-printf '\n==> NLTK-data voor IFEval voorbereiden\n'
+printf '\n==> Preparing NLTK data for IFEval\n'
 export NLTK_DATA="$CACHE_ROOT/nltk"
 mkdir -p "$NLTK_DATA"
 "$PY" - "$NLTK_DATA" <<'PY'
@@ -36,7 +35,7 @@ for name, resource in (("punkt", "tokenizers/punkt"), ("punkt_tab", "tokenizers/
                 raise
 PY
 
-printf '\n==> IFEval referentie-implementatie voorbereiden\n'
+printf '\n==> Preparing IFEval reference implementation\n'
 IFEVAL_REPO="$CACHE_ROOT/ifeval/google-research"
 if [[ ! -d "$IFEVAL_REPO/.git" ]]; then
   rm -rf "$IFEVAL_REPO"
@@ -50,18 +49,30 @@ if [[ "$(git -C "$IFEVAL_REPO" rev-parse HEAD 2>/dev/null || true)" != "$IFEVAL_
   git -C "$IFEVAL_REPO" checkout --quiet --detach "$IFEVAL_REVISION"
   git -C "$IFEVAL_REPO" sparse-checkout reapply >/dev/null 2>&1 || true
 fi
+IFEVAL_INPUT="$IFEVAL_REPO/instruction_following_eval/data/input_data.jsonl"
+[[ -s "$IFEVAL_INPUT" ]] || {
+  echo "ERROR: IFEval sparse checkout is incomplete; missing input data: $IFEVAL_INPUT" >&2
+  exit 1
+}
 
-printf '\n==> TruthfulQA binary dataset voorbereiden\n'
+printf '\n==> Preparing TruthfulQA binary dataset\n'
 TRUTH_REPO="$CACHE_ROOT/truthfulqa/TruthfulQA"
 if [[ ! -d "$TRUTH_REPO/.git" ]]; then
   rm -rf "$TRUTH_REPO"
   mkdir -p "$(dirname "$TRUTH_REPO")"
-  git clone --quiet --depth=1 https://github.com/sylinrl/TruthfulQA.git "$TRUTH_REPO"
+  git clone --quiet --filter=blob:none --no-checkout https://github.com/sylinrl/TruthfulQA.git "$TRUTH_REPO"
 fi
-# Bewust geen git pull: de eerste opgehaalde commit blijft lokaal gefixeerd totdat de cache bewust wordt verwijderd.
+if ! git -C "$TRUTH_REPO" cat-file -e "$TRUTHFULQA_REVISION^{commit}" 2>/dev/null; then
+  git -C "$TRUTH_REPO" fetch --quiet origin "$TRUTHFULQA_REVISION" --depth=1
+fi
+git -C "$TRUTH_REPO" checkout --quiet --detach "$TRUTHFULQA_REVISION"
 TRUTH_COMMIT="$(git -C "$TRUTH_REPO" rev-parse HEAD)"
+[[ "$TRUTH_COMMIT" == "$TRUTHFULQA_REVISION" ]] || {
+  echo "ERROR: TruthfulQA checkout does not match the requested revision." >&2
+  exit 1
+}
 
-printf '\n==> MMLU-Pro dataset voorbereiden (vaste revision)\n'
+printf '\n==> Preparing MMLU-Pro dataset (pinned revision)\n'
 export HF_HOME="$CACHE_ROOT/huggingface"
 export HF_DATASETS_CACHE="$CACHE_ROOT/huggingface/datasets"
 mkdir -p "$CACHE_ROOT/mmlu-pro"

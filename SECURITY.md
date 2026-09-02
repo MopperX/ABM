@@ -1,6 +1,6 @@
 # Security notes
 
-AI Benchmark v4 is intended for dedicated local AI workers.
+Benchmark is intended for dedicated local AI workers.
 
 ## Coding & Agent executes generated/modified code
 

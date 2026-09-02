@@ -7,7 +7,7 @@ if [[ "$OS" == "Linux" ]]; then
   command -v php >/dev/null 2>&1 || missing+=(php-cli)
   command -v git >/dev/null 2>&1 || missing+=(git)
   if ((${#missing[@]})); then
-    echo "Coding & Agent dependencies installeren: ${missing[*]}"
+    echo "Installing Coding & Agent dependencies: ${missing[*]}"
     $SUDO apt-get update
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
   fi
@@ -17,7 +17,7 @@ elif [[ "$OS" == "Darwin" ]]; then
   command -v php >/dev/null 2>&1 || pkgs+=(php)
   command -v git >/dev/null 2>&1 || pkgs+=(git)
   if ((${#pkgs[@]})); then
-    echo "Coding & Agent dependencies installeren: ${pkgs[*]}"
+    echo "Installing Coding & Agent dependencies: ${pkgs[*]}"
     brew install "${pkgs[@]}"
   fi
 fi

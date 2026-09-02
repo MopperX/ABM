@@ -46,14 +46,14 @@ Reasoning modes come from the per-machine model configuration. Only modes actual
 
 LiveCodeBench and official SWE-bench are intentionally not labeled as completed in this milestone. Official SWE-bench requires a Docker-based reproducible harness and is very storage-heavy; it will be added as an explicit optional external benchmark rather than silently turning the universal standard run into a ~100+ GB Docker workload.
 
-## Optional external LiveCodeBench layer
+## Default external LiveCodeBench layer
 
-Add `--with-livecodebench` to a run containing `coding-agent`, or answer **Yes** to the interactive prompt.
+LiveCodeBench runs by default whenever `coding-agent` is selected. Use `--without-livecodebench` only when the external evaluator must be skipped.
 
 ```bash
-./benchmark-v4 start coding-agent --profile standard --machine ai-worker-hp --with-livecodebench
+./benchmark start coding-agent --profile standard --machine ai-worker-hp
 ```
 
-Profiles use 3 (quick), 10 (standard), or the full EvalScope LiveCodeBench dataset (full). Evaluation runs through pinned EvalScope 1.11.1 with a Docker sandbox whose generated-code network access is disabled. EvalScope raw predictions, reviews, reports, logs and progress files are retained under the normal run `raw/` tree.
+Profiles use 3 (quick), 10 (standard), or the full EvalScope LiveCodeBench dataset (full). Evaluation runs through pinned EvalScope 1.11.1 with a Docker sandbox whose generated-code network access is disabled and whose sandboxes EvalScope removes on completion. EvalScope raw predictions, reviews, reports, logs and progress files are retained under the normal run `raw/` tree.
 
 Reasoning is kept separate: `nothinking` maps to OpenAI-compatible `reasoning_effort=none`, `thinking` to `medium`, and GPT-OSS `low`/`medium`/`high` remain unchanged. This mapping is stored in the raw command metadata.

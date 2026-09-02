@@ -7,32 +7,75 @@ PY="$ROOT/.venv/bin/python"
 BENCHES=(core coding-agent rag vision image speech music web)
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  RESULTS_ROOT="${BENCH_RESULTS_DIR:-/Library/Application Support/ai-benchmark-v4}"
+  RESULTS_ROOT="${BENCH_RESULTS_DIR:-$HOME/Library/Application Support/ai-benchmark}"
 else
-  RESULTS_ROOT="${BENCH_RESULTS_DIR:-/var/lib/ai-benchmark-v4}"
+  RESULTS_ROOT="${BENCH_RESULTS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark}"
 fi
+
+python_environment_fingerprint() {
+  "$PY" - "$ROOT/.venv" "$ROOT/.venv-lcb" <<'PY'
+import hashlib, json, subprocess, sys
+from pathlib import Path
+
+def fingerprint(venv: Path):
+    python = venv / "bin" / "python"
+    if not python.exists():
+        return None
+    version = subprocess.check_output([str(python), "--version"], text=True).strip()
+    packages = subprocess.check_output([str(python), "-m", "pip", "freeze", "--all"], text=True).splitlines()
+    payload = {"python_version": version, "packages": sorted(packages)}
+    encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return {"sha256": hashlib.sha256(encoded).hexdigest(), **payload}
+
+print(json.dumps({"project": fingerprint(Path(sys.argv[1])), "livecodebench": fingerprint(Path(sys.argv[2]))}, separators=(",", ":")))
+PY
+}
 
 usage() {
   cat <<'TXT'
-AI Benchmark v4
+Benchmark
 
 Usage:
-  ./benchmark-v4                         interactive checklist
-  ./benchmark-v4 start all [opties]
-  ./benchmark-v4 start core rag vision [opties]
-  ./benchmark-v4 status [run-id]
-  ./benchmark-v4 stop [run-id] [--force]
-  ./benchmark-v4 resume [run-id]
-  ./benchmark-v4 list-runs
+  ./benchmark                            interactive checklist
+  ./benchmark start all [options]
+  ./benchmark start core rag vision [options]
+  ./benchmark status [run-id]
+  ./benchmark stop [run-id] [--force]
+  ./benchmark resume [run-id]
+  ./benchmark list-runs
+  ./benchmark environment
 
 Start options:
   --profile quick|standard|full
   --machine NAME       use config/machines/NAME.models.tsv
-  --with-livecodebench  add the isolated external LiveCodeBench suite
+  --without-livecodebench  skip the isolated external LiveCodeBench suite
 
 Environment:
   BENCH_RESULTS_DIR    override the persistent results directory
 TXT
+}
+
+show_environment() {
+  "$PY" - "$RESULTS_ROOT" <<'PY'
+import platform, shutil, subprocess, sys
+
+def version(command):
+    if shutil.which(command[0]) is None:
+        return "not installed"
+    completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return completed.stdout.strip() if completed.returncode == 0 else "unavailable"
+
+print("Benchmark environment")
+print(f"Platform: {platform.platform()}")
+print(f"Python:   {sys.version.splitlines()[0]}")
+print(f"Ollama:   {version(['ollama', '--version'])}")
+print(f"Docker:   {version(['docker', 'version', '--format', '{{.Server.Version}}'])}")
+print(f"Results:  {sys.argv[1]}")
+print(f"Cache:    {sys.argv[1]}/cache")
+print("Models:")
+models = version(['ollama', 'list'])
+print(models if models != "not installed" else "  Ollama is not installed")
+PY
 }
 
 latest_run() {
@@ -110,9 +153,7 @@ interactive() {
   machine=$(dialog --stdout --radiolist "Machine configuration" 18 76 10 "${configs[@]}") || exit 0
   local with_lcb=0
   if grep -qx coding-agent <<<"$choices"; then
-    if dialog --yesno "Also run the external LiveCodeBench layer?\n\nIt uses a container sandbox and is heavier than the practical Coding & Agent tests." 11 72; then
-      with_lcb=1
-    fi
+    with_lcb=1
   fi
   local arr=() line
   while IFS= read -r line; do
@@ -126,12 +167,13 @@ interactive() {
 }
 
 start_run() {
-  local profile="standard" machine="" with_lcb=0 selected=()
+  local profile="standard" machine="" with_lcb=-1 selected=()
   while (($#)); do
     case "$1" in
       --profile) profile="$2"; shift 2 ;;
       --machine) machine="$2"; shift 2 ;;
       --with-livecodebench) with_lcb=1; shift ;;
+      --without-livecodebench) with_lcb=0; shift ;;
       --*) echo "Unknown option: $1" >&2; exit 2 ;;
       *) selected+=("$1"); shift ;;
     esac
@@ -139,6 +181,9 @@ start_run() {
   [[ "$profile" =~ ^(quick|standard|full)$ ]] || { echo "ERROR: invalid profile: $profile" >&2; exit 2; }
   if ((${#selected[@]}==0)); then selected=(core); fi
   if [[ " ${selected[*]} " == *" all "* ]]; then selected=("${BENCHES[@]}"); fi
+  if ((with_lcb < 0)); then
+    if [[ " ${selected[*]} " == *" coding-agent "* ]]; then with_lcb=1; else with_lcb=0; fi
+  fi
   local b
   for b in "${selected[@]}"; do
     [[ " ${BENCHES[*]} " == *" $b "* ]] || { echo "ERROR: unknown benchmark: $b" >&2; exit 2; }
@@ -206,11 +251,13 @@ PY
   if [[ -n "$git_commit" ]]; then
     if [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null || true)" ]]; then git_dirty="true"; else git_dirty="false"; fi
   fi
-  "$PY" - "$run_dir/raw/source.json" "$machine_config" "$git_commit" "$git_dirty" "$run_dir/source" <<'PY'
+  local python_environment
+  python_environment="$(python_environment_fingerprint)"
+  "$PY" - "$run_dir/raw/source.json" "$machine_config" "$git_commit" "$git_dirty" "$run_dir/source" "$python_environment" <<'PY'
 import hashlib,json,sys
 from datetime import datetime,timezone
 from pathlib import Path
-out=Path(sys.argv[1]); cfg=Path(sys.argv[2]); commit=sys.argv[3] or None; dirty=sys.argv[4]; source_root=Path(sys.argv[5])
+out=Path(sys.argv[1]); cfg=Path(sys.argv[2]); commit=sys.argv[3] or None; dirty=sys.argv[4]; source_root=Path(sys.argv[5]); python_environment=json.loads(sys.argv[6])
 h=hashlib.sha256()
 for f in sorted(x for x in source_root.rglob('*') if x.is_file() and not x.is_symlink()):
     h.update(str(f.relative_to(source_root)).encode()); h.update(b'\0'); h.update(f.read_bytes()); h.update(b'\0')
@@ -223,6 +270,7 @@ data={
   "source_snapshot":"source",
   "source_snapshot_sha256":h.hexdigest(),
   "machine_model_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
+  "python_environment":python_environment,
   "captured_at":datetime.now(timezone.utc).isoformat(timespec="seconds"),
 }
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
@@ -300,22 +348,22 @@ stop_run() {
     case "$1" in --force) force=1; shift;; *) id="$1"; shift;; esac
   done
   local run_dir; run_dir="$(resolve_run "$id")"
-  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
   if ((force)); then
     local pid=""
     [[ -f "$run_dir/runner.pid" ]] && pid="$(cat "$run_dir/runner.pid")"
     [[ -z "$pid" && -f "$run_dir/launcher.pid" ]] && pid="$(cat "$run_dir/launcher.pid")"
     if [[ -n "$pid" ]]; then kill -TERM "$pid" 2>/dev/null || true; sleep 1; kill -KILL "$pid" 2>/dev/null || true; fi
-    echo "Force-stop verzonden voor $(basename "$run_dir")."
+    echo "Force stop sent for $(basename "$run_dir")."
   else
     touch "$run_dir/stop.requested"
-    echo "Graceful stop aangevraagd voor $(basename "$run_dir"). De huidige Ollama-call mag afronden."
+    echo "Graceful stop requested for $(basename "$run_dir"). The current Ollama call may finish."
   fi
 }
 
 resume_run() {
   local run_dir; run_dir="$(resolve_run "${1:-}")"
-  [[ -n "$run_dir" ]] || { echo "Geen runs gevonden."; exit 1; }
+  [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
   local machine; machine="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["machine"])' "$run_dir/state.json")"
   local machine_config="$run_dir/config/machine.models.tsv"
   local source_file="$run_dir/raw/source.json"
@@ -342,7 +390,7 @@ resume_run() {
   selected_csv="$($PY -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["selected_benchmarks"]))' "$run_dir/state.json")"
   profile="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["profile"])' "$run_dir/state.json")"
   with_lcb="$($PY -c 'import json,sys; print(1 if json.load(open(sys.argv[1])).get("with_livecodebench") else 0)' "$run_dir/state.json")"
-  echo "Preflight voor resume: dependencies, Ollama en oorspronkelijke modellen controleren..."
+  echo "Resume preflight: checking dependencies, Ollama, and the original models..."
   # Use the snapshotted dependency hooks where possible. They may refer to the repository venv,
   # so expose the live venv to the snapshot without copying gigabytes into every run.
   if [[ "$run_source" != "$ROOT" && -d "$ROOT/.venv" ]]; then
@@ -354,6 +402,19 @@ resume_run() {
     [[ -e "$run_source/.venv-lcb" || -L "$run_source/.venv-lcb" ]] || ln -s "$ROOT/.venv-lcb" "$run_source/.venv-lcb"
   fi
   "$run_source/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
+  if [[ -f "$source_file" ]]; then
+    local python_environment
+    python_environment="$(python_environment_fingerprint)"
+    "$PY" - "$source_file" "$python_environment" <<'PY'
+import json, sys
+
+source = json.load(open(sys.argv[1]))
+expected = source.get("python_environment")
+current = json.loads(sys.argv[2])
+if expected is not None and current != expected:
+    raise SystemExit("ERROR: Python dependencies changed since this run started. Start a new run instead of resuming.")
+PY
+  fi
   rm -f "$run_dir/stop.requested"
   "$PY" - "$run_dir/state.json" <<'PY'
 import json,sys
@@ -369,7 +430,7 @@ PY
     nohup "${runner[@]}" >>"$log" 2>&1 < /dev/null &
   fi
   echo $! > "$run_dir/launcher.pid"
-  echo "Run hervat: $(basename "$run_dir")"
+  echo "Run resumed: $(basename "$run_dir")"
 }
 
 list_runs() {
@@ -398,6 +459,7 @@ case "$cmd" in
   stop) shift; stop_run "$@" ;;
   resume) shift; resume_run "${1:-}" ;;
   list-runs) list_runs ;;
+  environment) show_environment ;;
   -h|--help|help) usage ;;
-  *) echo "Onbekend commando: $cmd" >&2; usage; exit 2 ;;
+  *) echo "Unknown command: $cmd" >&2; usage; exit 2 ;;
 esac

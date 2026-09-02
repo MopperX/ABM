@@ -52,10 +52,28 @@ def _docker_prefix() -> list[str]:
     raise RuntimeError("The Docker sandbox is not accessible to the benchmark user. Run the LiveCodeBench preflight again.")
 
 
+def _sandbox_image_identity(prefix: list[str]) -> dict[str, Any]:
+    command = ["docker", "image", "inspect", "python:3.11-slim", "--format", '{{json .}}']
+    if prefix:
+        command = [*prefix, shlex.join(command)]
+    completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    if completed.returncode != 0:
+        return {"reference": "python:3.11-slim", "image_id": None, "repo_digests": []}
+    try:
+        image = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {"reference": "python:3.11-slim", "image_id": None, "repo_digests": []}
+    return {
+        "reference": "python:3.11-slim",
+        "image_id": image.get("Id"),
+        "repo_digests": image.get("RepoDigests") or [],
+    }
+
+
 def _parse_report(output: Path) -> tuple[Path, dict[str,Any]]:
     files=sorted(output.glob("reports/**/*.json"))
     if not files:
-        raise RuntimeError(f"EvalScope leverde geen LiveCodeBench report op in {output}")
+        raise RuntimeError(f"EvalScope did not produce a LiveCodeBench report in {output}")
     # One dataset/model is requested, so use the first JSON report and retain all raw files beside it.
     p=files[0]
     return p, load_json(p)
@@ -110,10 +128,12 @@ def run_livecodebench(
     if limit is not None:
         cmd += ["--limit",str(limit)]
 
+    prefix=_docker_prefix()
     command_meta={
         "created_at":utc_now(),"evalscope_version":EVALSCOPE_VERSION,"model":model,"mode":mode,"profile":profile,
         "limit":limit,"api_url":_openai_url(api),"generation_config":generation,
-        "sandbox":{"enabled":True,"engine":"docker","network_enabled":False,"memory_limit":"1g","cpu_limit":1.0},"command":cmd,
+        "sandbox":{"enabled":True,"engine":"docker","network_enabled":False,"memory_limit":"1g","cpu_limit":1.0,"remove_on_exit":True},
+        "sandbox_base_image":_sandbox_image_identity(prefix),"command":cmd,
     }
     atomic_json(attempt/"command.json",command_meta)
 
@@ -125,7 +145,6 @@ def run_livecodebench(
     Path(env["HF_HOME"]).mkdir(parents=True,exist_ok=True)
     Path(env["MODELSCOPE_CACHE"]).mkdir(parents=True,exist_ok=True)
 
-    prefix=_docker_prefix()
     if prefix:
         actual=prefix+[shlex.join(cmd)]
     else:
@@ -154,7 +173,7 @@ def run_livecodebench(
     elapsed=time.monotonic()-started
     power=sampler.stop(elapsed)
     if rc != 0:
-        raise RuntimeError(f"LiveCodeBench/EvalScope eindigde met exit code {rc}; zie {log_path}")
+        raise RuntimeError(f"LiveCodeBench/EvalScope exited with code {rc}; see {log_path}")
 
     report_file,report=_parse_report(output)
     result={
