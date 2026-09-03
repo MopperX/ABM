@@ -16,7 +16,15 @@ else
   BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark}"
 fi
 export BENCH_RESULTS_ROOT
-export BENCH_CACHE_DIR="${BENCH_CACHE_DIR:-$BENCH_RESULTS_ROOT/cache}"
+if [[ -z "${BENCH_CACHE_DIR:-}" ]]; then
+  ollama_models_dir="${OLLAMA_MODELS:-}"
+  if [[ -z "$ollama_models_dir" ]] && command -v systemctl >/dev/null 2>&1; then
+    ollama_models_dir="$(systemctl show ollama --property=Environment --value 2>/dev/null | sed -n 's/.*OLLAMA_MODELS=\([^ ]*\).*/\1/p' | head -n1)"
+  fi
+  export BENCH_CACHE_DIR="${ollama_models_dir:-$HOME/.ollama/models}/benchmark-cache"
+else
+  export BENCH_CACHE_DIR
+fi
 BENCH_MIN_FREE_GB="${BENCH_MIN_FREE_GB:-20}"
 
 [[ "$BENCH_MIN_FREE_GB" =~ ^[0-9]+$ ]] || {

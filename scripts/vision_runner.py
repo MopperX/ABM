@@ -3,7 +3,7 @@ import base64, json, re, statistics, time
 from pathlib import Path
 from typing import Any, Callable
 from urllib import request, error
-from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
 
 REPEATS={'quick':1,'standard':3,'full':5}
 PRACTICAL={'quick':['V1','V4','V5','V7'],'standard':['V1','V2','V3','V4','V5','V6','V7'],'full':['V1','V2','V3','V4','V5','V6','V7']}
@@ -44,7 +44,7 @@ def _practical_result(answer,task):
 def practical_jobs(repo_root:Path,profile:str)->int:return len(PRACTICAL[profile])*REPEATS[profile]
 
 def external_jobs(run_dir:Path,profile:str)->int:
-    root=run_dir.parents[2]/'cache'/'vision'
+    root=benchmark_cache_root(run_dir)/'vision'
     total=0
     for n in ['screenspot','mmmu-pro']:
         p=root/n/profile/'manifest.json'
@@ -71,7 +71,7 @@ def run_vision(*,repo_root:Path,run_dir:Path,model:str,mode:str,profile:str,api:
     return {'stopped':bool(ext.get('stopped')),'model':model,'mode':mode,'profile':profile,'practical':_summary(rows),'external':ext}
 
 def _run_external(*,run_dir,model,mode,profile,api,temperature,seed,context,is_completed,mark_completed,should_stop,set_current,base):
-    cache=run_dir.parents[2]/'cache'/'vision';out={}
+    cache=benchmark_cache_root(run_dir)/'vision';out={}
     # ScreenSpot click accuracy
     man=load_json(cache/'screenspot'/profile/'manifest.json'); ss=[]
     for i,s in enumerate(man['samples']):

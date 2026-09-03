@@ -57,7 +57,8 @@ TXT
 }
 
 show_environment() {
-  "$PY" - "$RESULTS_ROOT" <<'PY'
+  configure_cache_dir
+  "$PY" - "$RESULTS_ROOT" "$BENCH_CACHE_DIR" <<'PY'
 import platform, shutil, subprocess, sys
 
 def version(command):
@@ -72,7 +73,7 @@ print(f"Python:   {sys.version.splitlines()[0]}")
 print(f"Ollama:   {version(['ollama', '--version'])}")
 print(f"Docker:   {version(['docker', 'version', '--format', '{{.Server.Version}}'])}")
 print(f"Results:  {sys.argv[1]}")
-print(f"Cache:    {sys.argv[1]}/cache")
+print(f"Cache:    {sys.argv[2]}")
 print("Models:")
 models = version(['ollama', 'list'])
 print(models if models != "not installed" else "  Ollama is not installed")
@@ -113,6 +114,16 @@ find_machine_config() {
     exit 1
   }
   echo "$path"
+}
+
+configure_cache_dir() {
+  [[ -n "${BENCH_CACHE_DIR:-}" ]] && { export BENCH_CACHE_DIR; return; }
+  local ollama_models_dir="${OLLAMA_MODELS:-}"
+  if [[ -z "$ollama_models_dir" ]] && command -v systemctl >/dev/null 2>&1; then
+    ollama_models_dir="$(systemctl show ollama --property=Environment --value 2>/dev/null | sed -n 's/.*OLLAMA_MODELS=\([^ ]*\).*/\1/p' | head -n1)"
+  fi
+  ollama_models_dir="${ollama_models_dir:-$HOME/.ollama/models}"
+  export BENCH_CACHE_DIR="$ollama_models_dir/benchmark-cache"
 }
 
 interactive() {
@@ -178,6 +189,7 @@ start_run() {
     machine="$(hostname -s 2>/dev/null || hostname)"
   fi
   local machine_config; machine_config="$(find_machine_config)"
+  configure_cache_dir
   [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
     echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
     echo "Run ./bootstrap.sh first." >&2
@@ -364,6 +376,7 @@ stop_run() {
 resume_run() {
   local run_dir; run_dir="$(resolve_run "${1:-}")"
   [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
+  configure_cache_dir
   local machine; machine="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["machine"])' "$run_dir/state.json")"
   local machine_config="$run_dir/config/machine.models.tsv"
   local source_file="$run_dir/raw/source.json"

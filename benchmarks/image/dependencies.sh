@@ -9,8 +9,8 @@ PROFILE="${BENCH_PROFILE:-standard}"
 # Current stable cross-platform stack.
 "$PIP" install -q \
   'torch==2.13.0' 'torchvision==0.28.0' \
-  'diffusers==0.40.0' 'transformers>=4.57,<5' 'accelerate>=1,<2' \
-  'huggingface_hub>=0.28,<2' 'safetensors>=0.4,<1' 'Pillow>=10,<13' \
+  'diffusers==0.38.0' 'transformers>=4.57,<5' 'accelerate>=1,<2' \
+  'huggingface_hub>=0.34,<1' 'safetensors>=0.8,<1' 'Pillow>=10,<13' \
   'hpsv2==1.2.0' 'scipy>=1.11,<2'
 
 export HF_HOME="$BENCH_CACHE_DIR/image/hf-home"

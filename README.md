@@ -41,7 +41,7 @@ Use `./scripts/update-python-dependencies.sh` to update Python packages to their
 
 Results are stored in `${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark` on Ubuntu/Debian and WSL2, and in `$HOME/Library/Application Support/ai-benchmark` on macOS. Set `BENCH_RESULTS_DIR` to use a different location.
 
-`OLLAMA_MODELS` controls the Ollama model filesystem; the machine scan uses that location for Ollama model capacity and reports its used, free, and total space separately. Datasets, caches, and retained benchmark results use `BENCH_RESULTS_DIR`, so set it to the larger disk as well when the default home filesystem is small.
+`OLLAMA_MODELS` controls the Ollama model filesystem; the machine scan uses that location for Ollama model capacity and reports its used, free, and total space separately. Reusable datasets and evaluator caches default to `OLLAMA_MODELS/benchmark-cache`, on the same filesystem as the models. Retained run results, logs, reports, and source snapshots use `BENCH_RESULTS_DIR` and can remain on the root filesystem. Set `BENCH_CACHE_DIR` to override the cache location explicitly.
 
 Preflight requires at least 20 GiB free on the results filesystem before it downloads dependencies, datasets, and models. Set `BENCH_MIN_FREE_GB` to a different non-negative whole-number threshold when the selected model configuration requires more capacity or for a deliberately small test run.
 

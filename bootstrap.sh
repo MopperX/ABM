@@ -102,7 +102,7 @@ if [[ "$OS" == "Linux" ]]; then
   install_ollama
   RESULTS_ROOT="${BENCH_RESULTS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark}"
   log "Creating persistent results directory: $RESULTS_ROOT"
-  mkdir -p "$RESULTS_ROOT/runs" "$RESULTS_ROOT/logs" "$RESULTS_ROOT/cache"
+  mkdir -p "$RESULTS_ROOT/runs" "$RESULTS_ROOT/logs"
 elif [[ "$OS" == "Darwin" ]]; then
   install_homebrew
   if ((UPDATE_HOST)); then
@@ -116,7 +116,7 @@ elif [[ "$OS" == "Darwin" ]]; then
   brew services start ollama >/dev/null 2>&1 || true
   RESULTS_ROOT="${BENCH_RESULTS_DIR:-$HOME/Library/Application Support/ai-benchmark}"
   log "Creating persistent results directory: $RESULTS_ROOT"
-  mkdir -p "$RESULTS_ROOT/runs" "$RESULTS_ROOT/logs" "$RESULTS_ROOT/cache"
+  mkdir -p "$RESULTS_ROOT/runs" "$RESULTS_ROOT/logs"
 else
   echo "ERROR: supported platforms are Ubuntu/Debian, Ubuntu on WSL, and macOS." >&2
   exit 1

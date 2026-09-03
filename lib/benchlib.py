@@ -45,6 +45,11 @@ def load_json(path: Path) -> Any:
         return json.load(f)
 
 
+def benchmark_cache_root(run_dir: Path) -> Path:
+    configured = os.environ.get("BENCH_CACHE_DIR")
+    return Path(configured).expanduser() if configured else run_dir.parents[2] / "cache"
+
+
 def parse_defaults(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
     if not path.exists():

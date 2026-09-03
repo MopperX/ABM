@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, distribution_summary, load_json, parse_model_rows, utc_now
 
 STT_PRACTICAL={"quick":["S1","S2","S3"],"standard":["S1","S2","S3","S4","S5"],"full":["S1","S2","S3","S4","S5"]}
 TTS_TESTS={"quick":["T1","T2","T4"],"standard":["T1","T2","T3","T4"],"full":["T1","T2","T3","T4"]}
@@ -33,7 +33,7 @@ def parse_speech_models(path:Path)->list[dict[str,str]]:
     return out
 
 def _prepared(run_dir:Path)->dict[str,Any]:
-    return load_json(run_dir.parents[2]/'cache'/'speech'/'prepared.json')
+    return load_json(benchmark_cache_root(run_dir)/'speech'/'prepared.json')
 
 
 def job_count(run_dir:Path,profile:str,speech_config:Path)->int:

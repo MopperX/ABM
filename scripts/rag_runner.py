@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib import request, error
 
-from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, call_performance_summary, distribution_summary, evaluate_checks, load_json, ollama_chat, response_metrics, utc_now
 
 EMBED_MODEL = "embeddinggemma"
 TOP_K = 5
@@ -179,7 +179,7 @@ def prepare_beir_retrieval(*,run_dir:Path,profile:str,api:str,is_completed,mark_
     path=run_dir/"raw/rag/retrieval/beir-scifact/result.json"
     if is_completed(key) and path.exists(): return load_json(path)
     set_current({"benchmark":"rag","model":EMBED_MODEL,"mode":"retrieval","test":"BEIR-SciFact","repeat":1,"repeats":1})
-    results_root=run_dir.parents[2]; data=results_root/"cache/beir/scifact"
+    data=benchmark_cache_root(run_dir)/"beir/scifact"
     if not (data/"corpus.jsonl").exists(): raise RuntimeError(f"BEIR SciFact cache is missing: {data}; run preflight again")
     corpus,queries,qrels=_load_scifact(data); qids=_select_qids(qrels,PROFILES[profile]["beir_queries"])
     try:
