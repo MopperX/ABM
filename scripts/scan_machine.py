@@ -147,10 +147,12 @@ def main() -> int:
         print(f"Ollama models | {ollama_storage['path']} | used {ollama_storage['used_gib']:.2f} GiB | free {ollama_storage['free_gib']:.2f} GiB | total {ollama_storage['total_gib']:.2f} GiB")
         print(f"Results and cache | {results_storage['path']} | used {results_storage['used_gib']:.2f} GiB | free {results_storage['free_gib']:.2f} GiB | total {results_storage['total_gib']:.2f} GiB")
         print("Allowed models")
+        allowed_disk_minimum_gib = sum(result["requirements"]["free_disk_gib"] for result in findings if result["allowed"])
         for result in findings:
             if result["allowed"]:
                 requirements = result["requirements"]
                 print(f"{result['model']} | RAM minimum {requirements['ram_gib']:g} GiB | disk minimum {requirements['free_disk_gib']:g} GiB")
+        print(f"Allowed models total disk minimum | {allowed_disk_minimum_gib:g} GiB")
         print("Excluded models")
         for result in findings:
             if not result["allowed"]:
