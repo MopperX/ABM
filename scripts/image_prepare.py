@@ -22,6 +22,13 @@ def image_config_for(machine_cfg:Path, repo:Path)->Path:
     return machine_cfg
 
 
+def machine_name(machine_cfg: Path) -> str:
+    """Return the machine label from the generated eligible-model config path."""
+    # `benchmark` writes this file to <results>/scans/<machine>/eligible.models.tsv.
+    # Retain a useful fallback for direct invocations with another config filename.
+    return machine_cfg.parent.name if machine_cfg.name == 'eligible.models.tsv' else machine_cfg.stem
+
+
 def parse_models(path:Path):
     out=[]
     for row in parse_model_rows(path):

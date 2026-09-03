@@ -131,9 +131,14 @@ interactive() {
     echo "dialog is missing. Run ./bootstrap.sh first, or use CLI mode." >&2
     exit 1
   }
-  local choices profile machine
-  choices=$(dialog --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 10 \
-    all "ALL - all benchmarks" off \
+  local choices profile machine selection
+  selection=$(dialog --stdout --menu "Select benchmarks" 13 72 2 \
+    all "ALL - all benchmarks" \
+    custom "Choose individual benchmarks") || exit 0
+  if [[ "$selection" == "all" ]]; then
+    choices=$(printf '%s\n' "${BENCHES[@]}")
+  else
+    choices=$(dialog --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 9 \
     core "Core LLM" on \
     coding-agent "Coding & Agent" off \
     rag "RAG / Documents" off \
@@ -142,10 +147,8 @@ interactive() {
     speech "Speech & Audio" off \
     music "Music Generation" off \
     web "Web / Research (local SearXNG)" off) || exit 0
-  [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
-  if grep -qx all <<<"$choices"; then
-    choices=$(printf '%s\n' "${BENCHES[@]}")
   fi
+  [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
   profile=$(dialog --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
   machine="$(hostname -s 2>/dev/null || hostname)"
   local with_lcb=0
