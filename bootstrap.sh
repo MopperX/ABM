@@ -125,6 +125,24 @@ fi
 log "Preparing Python virtual environment"
 BOOTSTRAP_VENV="$(mktemp -d)"
 python3 -m venv "$BOOTSTRAP_VENV"
+if ! "$BOOTSTRAP_VENV/bin/python" -m pip --version >/dev/null 2>&1; then
+  log "Restoring pip in the bootstrap virtual environment"
+  "$BOOTSTRAP_VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1 || true
+fi
+if ! "$BOOTSTRAP_VENV/bin/python" -m pip --version >/dev/null 2>&1; then
+  rm -rf "$BOOTSTRAP_VENV"
+  if [[ "$OS" == "Linux" ]]; then
+    $SUDO apt-get install -y --reinstall python3-venv python3-pip
+  else
+    brew reinstall python
+  fi
+  BOOTSTRAP_VENV="$(mktemp -d)"
+  python3 -m venv "$BOOTSTRAP_VENV"
+fi
+"$BOOTSTRAP_VENV/bin/python" -m pip --version >/dev/null 2>&1 || {
+  echo "ERROR: Python virtual environments were created without pip. Repair Python and retry." >&2
+  exit 1
+}
 "$BOOTSTRAP_VENV/bin/pip" install --upgrade pip uv >/dev/null
 "$BOOTSTRAP_VENV/bin/uv" venv --clear --managed-python --python 3 "$ROOT/.venv"
 rm -rf "$BOOTSTRAP_VENV"
