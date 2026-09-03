@@ -51,7 +51,7 @@ Start options:
   --profile quick|standard|full
   --machine NAME       label results with the measured machine name
   --without-livecodebench  skip the isolated external LiveCodeBench suite
-  --cleanup-on-success     remove benchmark cache and non-retained Ollama models after success
+  --cleanup-on-success     remove non-retained Ollama models after success
   --keep-model MODEL       retain this Ollama model during cleanup (repeatable)
 
 Environment:
@@ -135,13 +135,13 @@ interactive() {
     exit 1
   }
   local choices profile machine selection
-  selection=$(dialog --stdout --menu "Select benchmarks" 13 72 2 \
+  selection=$(dialog --ascii-lines --stdout --menu "Select benchmarks" 13 72 2 \
     all "ALL - all benchmarks" \
     custom "Choose individual benchmarks") || exit 0
   if [[ "$selection" == "all" ]]; then
     choices=$(printf '%s\n' "${BENCHES[@]}")
   else
-    choices=$(dialog --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 9 \
+    choices=$(dialog --ascii-lines --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 9 \
     core "Core LLM" on \
     coding-agent "Coding & Agent" off \
     rag "RAG / Documents" off \
@@ -152,7 +152,7 @@ interactive() {
     web "Web / Research (local SearXNG)" off) || exit 0
   fi
   [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
-  profile=$(dialog --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
+  profile=$(dialog --ascii-lines --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
   machine="$(hostname -s 2>/dev/null || hostname)"
   local with_lcb=0
   if grep -qx coding-agent <<<"$choices"; then
@@ -294,7 +294,7 @@ state={
  "schema_version":1,"run_id":rid,"machine":machine,"profile":profile,"selected_benchmarks":selected,"with_livecodebench":with_lcb,
  "status":"starting","created_at":datetime.now(timezone.utc).isoformat(timespec='seconds'),"started_at":None,
  "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{},
- "cleanup":{"on_success":cleanup_on_success,"remove_cache":cleanup_on_success,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
+ "cleanup":{"on_success":cleanup_on_success,"remove_cache":false,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
 }
 (run/'state.json').write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 (run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','cleanup','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
@@ -484,7 +484,7 @@ cleanup_run() {
   [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
   local cleanup_script="$run_dir/source/scripts/cleanup.py"
   [[ -f "$cleanup_script" ]] || cleanup_script="$ROOT/scripts/cleanup.py"
-  "$PY" "$cleanup_script" --run-dir "$run_dir"
+  "$PY" "$cleanup_script" --run-dir "$run_dir" --interactive
 }
 
 cmd="${1:-}"

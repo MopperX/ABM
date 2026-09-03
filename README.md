@@ -75,7 +75,7 @@ Preflight refreshes every selected Ollama model tag before a new run or resume. 
 
 ### Cleanup after a successful run
 
-Use `--cleanup-on-success` to discard the benchmark cache and every installed Ollama model except the models named with `--keep-model`. Cleanup runs only when the benchmark has fully completed; failed or stopped runs retain all assets so they can be inspected or resumed. Run evidence in `BENCH_RESULTS_DIR/runs` is always retained. Because this removes all non-retained Ollama models, list every model you want to preserve:
+Use `--cleanup-on-success` to discard every installed Ollama model except the models named with `--keep-model`. Downloaded model caches for Image, Music, Speech, and other benchmark backends are deliberately retained, so a later run can reuse them instead of downloading the model again. Cleanup runs only when the benchmark has fully completed; failed or stopped runs retain all assets so they can be inspected or resumed. Run evidence in `BENCH_RESULTS_DIR/runs` is always retained. Because this removes all non-retained Ollama models, list every Ollama model you want to preserve:
 
 ```bash
 ./benchmark start all --profile standard --machine ai-worker-hp \
@@ -84,7 +84,7 @@ Use `--cleanup-on-success` to discard the benchmark cache and every installed Ol
   --keep-model embeddinggemma
 ```
 
-The cleanup report is written to `summary/cleanup.json`. To apply the stored cleanup policy to an already completed run, use `./benchmark cleanup <run-id>`.
+The cleanup report is written to `summary/cleanup.json`. To choose model-by-model after an already completed run, use `./benchmark cleanup <run-id>`. It reads that run's frozen machine scan and asks only about models selected for its benchmark suites. Choosing removal deletes that model's local cache too; shared tools, datasets, and run evidence remain untouched. This interactive command is the recommended cleanup workflow for normal use.
 
 Enabled Image and Music model rows use the Hugging Face `main` revision and are refreshed during preflight; each run records the resolved revision. Fixed benchmark datasets and evaluator assets remain pinned so their scoring contract does not move with upstream releases.
 
