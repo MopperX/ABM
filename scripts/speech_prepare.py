@@ -286,6 +286,7 @@ def prepare_practical(repo: Path, cache: Path, fleurs: dict[str, Any], tts_asset
     tests = json.loads((repo / "benchmarks/speech/fixtures/practical/tests.json").read_text(encoding="utf-8"))
     stt_defs = {x["id"]: x for x in tests["stt"]}
     pdir = cache / "practical" / "audio"
+    pdir.mkdir(parents=True, exist_ok=True)
     samples = fleurs["samples"]
     if len(samples) < 5:
         raise RuntimeError("Onvoldoende FLEURS-samples voor praktische speech-fixtures")
