@@ -39,6 +39,7 @@ Usage:
   ./benchmark                            interactive checklist
   ./benchmark start all [options]
   ./benchmark start core rag vision [options]
+  ./benchmark scan
   ./benchmark status [run-id]
   ./benchmark stop [run-id] [--force]
   ./benchmark resume [run-id]
@@ -47,7 +48,7 @@ Usage:
 
 Start options:
   --profile quick|standard|full
-  --machine NAME       use config/machines/NAME.models.tsv
+  --machine NAME       label results with the measured machine name
   --without-livecodebench  skip the isolated external LiveCodeBench suite
 
 Environment:
@@ -106,17 +107,9 @@ PY
 }
 
 find_machine_config() {
-  local name="$1"
-  local path="$ROOT/config/machines/$name.models.tsv"
+  local path="$ROOT/config/models.toml"
   [[ -f "$path" ]] || {
-    echo "ERROR: machine configuration is missing: $path" >&2
-    echo "Available:" >&2
-    local f base
-    for f in "$ROOT"/config/machines/*.models.tsv; do
-      [[ -e "$f" ]] || continue
-      base="$(basename "$f" .models.tsv)"
-      echo "  $base" >&2
-    done
+    echo "ERROR: global model catalog is missing: $path" >&2
     exit 1
   }
   echo "$path"
@@ -143,14 +136,7 @@ interactive() {
     choices=$(printf '%s\n' "${BENCHES[@]}")
   fi
   profile=$(dialog --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
-  local configs=() f name
-  for f in "$ROOT"/config/machines/*.models.tsv; do
-    [[ -e "$f" ]] || continue
-    name="$(basename "$f" .models.tsv)"
-    [[ "$name" == "template" ]] && continue
-    configs+=("$name" "$f" off)
-  done
-  machine=$(dialog --stdout --radiolist "Machine configuration" 18 76 10 "${configs[@]}") || exit 0
+  machine="$(hostname -s 2>/dev/null || hostname)"
   local with_lcb=0
   if grep -qx coding-agent <<<"$choices"; then
     with_lcb=1
@@ -190,18 +176,19 @@ start_run() {
   done
   if [[ -z "$machine" ]]; then
     machine="$(hostname -s 2>/dev/null || hostname)"
-    [[ -f "$ROOT/config/machines/$machine.models.tsv" ]] || {
-      echo "ERROR: no machine configuration for hostname '$machine'. Use --machine NAME." >&2
-      exit 2
-    }
   fi
-  local machine_config; machine_config="$(find_machine_config "$machine")"
+  local machine_config; machine_config="$(find_machine_config)"
   [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
     echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
     echo "Run ./bootstrap.sh first." >&2
     exit 1
   }
   local selected_csv; selected_csv="$(IFS=,; echo "${selected[*]}")"
+
+  local scan_dir="$RESULTS_ROOT/scans/$machine"
+  mkdir -p "$scan_dir"
+  machine_config="$scan_dir/eligible.models.tsv"
+  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$machine_config"
 
   if ((with_lcb)) && [[ " $selected_csv " != *"coding-agent"* ]]; then
     echo "ERROR: --with-livecodebench requires coding-agent to be selected." >&2; exit 2
@@ -272,6 +259,19 @@ data={
   "machine_model_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
   "python_environment":python_environment,
   "captured_at":datetime.now(timezone.utc).isoformat(timespec="seconds"),
+}
+
+scan_models() {
+  local machine="$(hostname -s 2>/dev/null || hostname)"
+  (($# == 0)) || { echo "ERROR: benchmark scan does not accept arguments." >&2; exit 2; }
+  [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
+    echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
+    echo "Run ./bootstrap.sh first." >&2
+    exit 1
+  }
+  local scan_dir="$RESULTS_ROOT/scans/$machine"
+  mkdir -p "$scan_dir"
+  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$scan_dir/eligible.models.tsv" --report
 }
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
 PY
@@ -384,7 +384,7 @@ resume_run() {
   fi
   if [[ ! -f "$machine_config" ]]; then
     # Backwards compatibility for runs created before per-run config snapshots existed.
-    machine_config="$(find_machine_config "$machine")"
+    machine_config="$(find_machine_config)"
   fi
   local selected_csv profile with_lcb
   selected_csv="$($PY -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["selected_benchmarks"]))' "$run_dir/state.json")"
@@ -455,6 +455,7 @@ cmd="${1:-}"
 case "$cmd" in
   "") interactive ;;
   start) shift; start_run "$@" ;;
+  scan) shift; scan_models "$@" ;;
   status) shift; show_status "${1:-}" ;;
   stop) shift; stop_run "$@" ;;
   resume) shift; resume_run "${1:-}" ;;

@@ -57,7 +57,7 @@ Supported environments are Ubuntu/Debian, Ubuntu on WSL2, and macOS. Fedora, Arc
 
 Coding & Agent runs include LiveCodeBench by default. It executes generated code in a Docker sandbox with network access disabled; use `--without-livecodebench` only to skip that external evaluator.
 
-Storage, memory, and accelerator requirements depend on the enabled rows in the selected machine configuration and the chosen profile. Reserve capacity for the selected model files, downloaded datasets, Python environments, benchmark cache, and retained raw results. The `full` profile performs more repeats and complete external datasets, so it requires materially more runtime and storage than `quick` or `standard`.
+Storage, memory, and accelerator requirements depend on the models allowed by the local machine scan and the chosen profile. Reserve capacity for the selected model files, downloaded datasets, Python environments, benchmark cache, and retained raw results. The `full` profile performs more repeats and complete external datasets, so it requires materially more runtime and storage than `quick` or `standard`.
 
 Bootstrap creates the project environment with the latest stable CPython through `uv`; the LiveCodeBench environment uses the same interpreter. CI validates the repository against Python 3.14 as the current compatibility baseline. Every run records the installed Python, Ollama, Docker, operating-system, and available hardware metadata, so dependency and host updates remain visible in the result evidence.
 
@@ -67,13 +67,28 @@ Bootstrap creates the project environment with the latest stable CPython through
 ./benchmark status
 ```
 
-Results are written outside Git by default. Every run freezes its source, machine configuration, dataset manifests, exact Ollama model identity, and Python environment fingerprint. A resume is rejected if a model tag resolves to a different digest or shared Python dependencies have changed.
+Results are written outside Git by default. Every run freezes its source, scan-derived eligible model configuration, dataset manifests, exact Ollama model identity, and Python environment fingerprint. A resume is rejected if a model tag resolves to a different digest or shared Python dependencies have changed.
 
 Preflight refreshes every selected Ollama model tag before a new run or resume. A tag that has moved to a new model digest starts a new run with that updated identity; resume remains intentionally blocked because it must use the original digest.
 
 Enabled Image and Music model rows use the Hugging Face `main` revision and are refreshed during preflight; each run records the resolved revision. Fixed benchmark datasets and evaluator assets remain pinned so their scoring contract does not move with upstream releases.
 
 Quality, performance, efficiency, and stability remain separate dimensions. Reports do not combine unrelated metrics into a universal score. See [METHODOLOGY.md](METHODOLOGY.md), [RESULTS_SCHEMA.md](RESULTS_SCHEMA.md), and [SECURITY.md](SECURITY.md).
+
+## Machine scan
+
+`config/models.toml` is the single global catalog. It defines every candidate model, its benchmark suites, and hard RAM, VRAM, and free-disk requirements. The local scan classifies each model as GPU-resident, hybrid offload, CPU/RAM, or insufficient resources. The report is local evidence and does not modify or push configuration.
+
+```bash
+./.venv/bin/python scripts/scan_machine.py \
+	--models config/models.toml \
+	--output "$BENCH_RESULTS_DIR/machine-scan.json" \
+	--eligible-config "$BENCH_RESULTS_DIR/eligible.models.tsv"
+```
+
+`benchmark start` performs this scan itself and uses only the generated `eligible.models.tsv` file.
+
+Use `./benchmark scan` on the current machine to print the allowed models first, followed by excluded models as `model | reason`.
 
 ## Language policy
 

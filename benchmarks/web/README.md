@@ -3,7 +3,7 @@
 Web / Research is the only benchmark suite that gives selected Ollama models internet tools.
 
 - Core, Coding & Agent, RAG and the other suites remain offline from the model's point of view.
-- A model runs Web / Research only when its machine configuration has `web=true`.
+- A model runs Web / Research only when the global catalog has `web=true` and the local machine scan allows it.
 - Search is provided by a pinned local SearXNG instance on loopback; there is no paid search API or API key.
 - `web_fetch` accepts only public HTTP/HTTPS destinations. Loopback, private, link-local, reserved and local-network addresses are rejected to reduce SSRF risk.
 - Every search result, fetched page excerpt, tool call, response, citation and timing is retained under `raw/web/`.

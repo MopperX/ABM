@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import time
 import threading
+import tomllib
 import hashlib
 import math
 import statistics
@@ -64,6 +65,28 @@ MODEL_CONFIG_FIELDS = [
 
 
 def parse_model_rows(path: Path, *, enabled_only: bool = True) -> list[dict[str, str]]:
+    if path.suffix == ".toml":
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
+        rows = document.get("models", [])
+        if not isinstance(rows, list):
+            raise ValueError(f"models must be an array of tables: {path}")
+        rows_out: list[dict[str, str]] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError(f"model entry must be a table: {path}")
+            clean = {
+                field: ",".join(str(value) for value in row[field]) if isinstance(row.get(field), list)
+                else str(row.get(field, "")).strip()
+                for field in MODEL_CONFIG_FIELDS
+            }
+            if isinstance(row.get("enabled"), bool):
+                clean["enabled"] = "true" if row["enabled"] else "false"
+            if enabled_only and clean["enabled"].lower() not in {"1", "true", "yes", "on"}:
+                continue
+            if clean["model"]:
+                rows_out.append(clean)
+        return rows_out
+
     rows_out: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8", newline="") as f:
         rows = (line for line in f if line.strip() and not line.lstrip().startswith("#"))
