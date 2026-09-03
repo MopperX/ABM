@@ -73,6 +73,19 @@ Results are written outside Git by default. Every run freezes its source, scan-d
 
 Preflight refreshes every selected Ollama model tag before a new run or resume. A tag that has moved to a new model digest starts a new run with that updated identity; resume remains intentionally blocked because it must use the original digest.
 
+### Cleanup after a successful run
+
+Use `--cleanup-on-success` to discard the benchmark cache and every installed Ollama model except the models named with `--keep-model`. Cleanup runs only when the benchmark has fully completed; failed or stopped runs retain all assets so they can be inspected or resumed. Run evidence in `BENCH_RESULTS_DIR/runs` is always retained. Because this removes all non-retained Ollama models, list every model you want to preserve:
+
+```bash
+./benchmark start all --profile standard --machine ai-worker-hp \
+  --cleanup-on-success \
+  --keep-model qwen3:8b \
+  --keep-model embeddinggemma
+```
+
+The cleanup report is written to `summary/cleanup.json`. To apply the stored cleanup policy to an already completed run, use `./benchmark cleanup <run-id>`.
+
 Enabled Image and Music model rows use the Hugging Face `main` revision and are refreshed during preflight; each run records the resolved revision. Fixed benchmark datasets and evaluator assets remain pinned so their scoring contract does not move with upstream releases.
 
 Quality, performance, efficiency, and stability remain separate dimensions. Reports do not combine unrelated metrics into a universal score. See [METHODOLOGY.md](METHODOLOGY.md), [RESULTS_SCHEMA.md](RESULTS_SCHEMA.md), and [SECURITY.md](SECURITY.md).

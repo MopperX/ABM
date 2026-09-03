@@ -25,7 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.benchlib import parse_model_rows
 
 WHISPER_CPP_TAG = "v1.8.7"
-FLEURS_REV = "73c36572c7f01dea15fe27266e26c29f4cda9a83"
+# datasets 4.x no longer executes dataset loading scripts.  FLEURS exposes its
+# official Parquet conversion at this revision, so keep loading independent of
+# the legacy fleurs.py script on the default branch.
+FLEURS_REV = "refs/convert/parquet"
 SHERPA_VERSION = "1.13.7"
 TTS_ASSETS = {
     "vits-piper-nl_NL-alex-medium": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-nl_NL-alex-medium.tar.bz2",
@@ -200,7 +203,7 @@ def prepare_fleurs(profile: str, cache: Path) -> dict[str, Any]:
             return m
 
     from datasets import Audio, load_dataset
-    ds = load_dataset("google/fleurs", "nl_nl", split="test", streaming=True, revision=FLEURS_REV)
+    ds = load_dataset("google/fleurs", data_dir="nl_nl", split="test", streaming=True, revision=FLEURS_REV)
     ds = ds.cast_column("audio", Audio(decode=False))
     rows = list(ds)
     idxs = even_indices(len(rows), desired)

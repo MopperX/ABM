@@ -43,6 +43,7 @@ Usage:
   ./benchmark status [run-id]
   ./benchmark stop [run-id] [--force]
   ./benchmark resume [run-id]
+  ./benchmark cleanup [run-id]
   ./benchmark list-runs
   ./benchmark environment
 
@@ -50,6 +51,8 @@ Start options:
   --profile quick|standard|full
   --machine NAME       label results with the measured machine name
   --without-livecodebench  skip the isolated external LiveCodeBench suite
+  --cleanup-on-success     remove benchmark cache and non-retained Ollama models after success
+  --keep-model MODEL       retain this Ollama model during cleanup (repeatable)
 
 Environment:
   BENCH_RESULTS_DIR    override the persistent results directory
@@ -167,13 +170,15 @@ interactive() {
 }
 
 start_run() {
-  local profile="standard" machine="" with_lcb=-1 selected=()
+  local profile="standard" machine="" with_lcb=-1 cleanup_on_success=0 keep_models=() selected=()
   while (($#)); do
     case "$1" in
       --profile) profile="$2"; shift 2 ;;
       --machine) machine="$2"; shift 2 ;;
       --with-livecodebench) with_lcb=1; shift ;;
       --without-livecodebench) with_lcb=0; shift ;;
+      --cleanup-on-success) cleanup_on_success=1; shift ;;
+      --keep-model) keep_models+=("$2"); shift 2 ;;
       --*) echo "Unknown option: $1" >&2; exit 2 ;;
       *) selected+=("$1"); shift ;;
     esac
@@ -277,18 +282,22 @@ data={
 }
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
 PY
-  "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" <<'PY'
+  local keep_models_json
+  keep_models_json="$(printf '%s\n' "${keep_models[@]}" | "$PY" -c 'import json,sys; print(json.dumps([x.strip() for x in sys.stdin if x.strip()]))')"
+  "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" "$cleanup_on_success" "$keep_models_json" "$BENCH_CACHE_DIR" <<'PY'
 import json,sys
 from datetime import datetime,timezone
 from pathlib import Path
 run=Path(sys.argv[1]); rid=sys.argv[2]; machine=sys.argv[3]; profile=sys.argv[4]; selected=sys.argv[5].split(','); with_lcb=sys.argv[6]=='1'
+cleanup_on_success=sys.argv[7]=='1'; keep_models=json.loads(sys.argv[8]); cache_dir=sys.argv[9]
 state={
  "schema_version":1,"run_id":rid,"machine":machine,"profile":profile,"selected_benchmarks":selected,"with_livecodebench":with_lcb,
  "status":"starting","created_at":datetime.now(timezone.utc).isoformat(timespec='seconds'),"started_at":None,
- "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{}
+ "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{},
+ "cleanup":{"on_success":cleanup_on_success,"remove_cache":cleanup_on_success,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
 }
 (run/'state.json').write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-(run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','cleanup','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 PY
   "$PY" - "$run_dir/state.json" <<'PY'
 import json,sys
@@ -316,8 +325,11 @@ PY
   echo "Results:     $run_dir"
   echo
   echo "The SSH session or terminal may now be closed."
-  echo "Status: ./benchmark-v4 status $run_id"
-  echo "Stop:   ./benchmark-v4 stop $run_id"
+  echo "Status: ./benchmark status $run_id"
+  echo "Stop:   ./benchmark stop $run_id"
+  if ((cleanup_on_success)); then
+    echo "Cleanup: enabled; retaining: ${keep_models[*]:-(none)}"
+  fi
 }
 
 scan_models() {
@@ -467,6 +479,14 @@ for _,line in sorted(rows): print(line)
 PY
 }
 
+cleanup_run() {
+  local run_dir; run_dir="$(resolve_run "${1:-}")"
+  [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
+  local cleanup_script="$run_dir/source/scripts/cleanup.py"
+  [[ -f "$cleanup_script" ]] || cleanup_script="$ROOT/scripts/cleanup.py"
+  "$PY" "$cleanup_script" --run-dir "$run_dir"
+}
+
 cmd="${1:-}"
 case "$cmd" in
   "") interactive ;;
@@ -476,6 +496,7 @@ case "$cmd" in
   stop) shift; stop_run "$@" ;;
   resume) shift; resume_run "${1:-}" ;;
   list-runs) list_runs ;;
+  cleanup) shift; cleanup_run "${1:-}" ;;
   environment) show_environment ;;
   -h|--help|help) usage ;;
   *) echo "Unknown command: $cmd" >&2; usage; exit 2 ;;
