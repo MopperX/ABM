@@ -1,0 +1,302 @@
+Wrote machine scan: /root/.local/state/ai-benchmark/scans/ai-worker-deskmini/latest.json
+Preflight: checking dependencies, Ollama, and models...
+
+==> Core externe benchmarkdependencies controleren
+Ignoring colorama: markers 'sys_platform == "win32"' don't match your environment
+Ignoring tzdata: markers 'sys_platform == "emscripten" or sys_platform == "win32"' don't match your environment
+Collecting absl-py==2.5.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 3))
+  Downloading absl_py-2.5.0-py3-none-any.whl (137 kB)
+Collecting aiohappyeyeballs==2.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 7))
+  Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+Collecting aiohttp==3.14.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 11))
+  Downloading aiohttp-3.14.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 13.1 MB/s  0:00:00
+Collecting aiosignal==1.4.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 132))
+  Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting anyio==4.14.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 136))
+  Downloading anyio-4.14.2-py3-none-any.whl (125 kB)
+Collecting attrs==26.1.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 140))
+  Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting certifi==2026.7.22 (from -r /root/ABM/benchmarks/core/requirements.lock (line 144))
+  Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+Collecting charset-normalizer==3.5.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 151))
+  Downloading charset_normalizer-3.5.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (251 kB)
+Collecting click==8.5.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 325))
+  Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Collecting cloudpickle==3.1.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 331))
+  Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Collecting datasets==4.8.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 339))
+  Downloading datasets-4.8.5-py3-none-any.whl (528 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 529.0/529.0 kB 12.0 MB/s  0:00:00
+Collecting defusedxml==0.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 343))
+  Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Collecting dill==0.4.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 347))
+  Downloading dill-0.4.1-py3-none-any.whl (120 kB)
+Collecting filelock==3.32.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 353))
+  Downloading filelock-3.32.5-py3-none-any.whl (100 kB)
+Collecting frozenlist==1.8.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 359))
+  Downloading frozenlist-1.8.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+Collecting fsspec==2026.2.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 493))
+  Downloading fsspec-2026.2.0-py3-none-any.whl (202 kB)
+Collecting h11==0.16.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 499))
+  Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting hf-xet==1.6.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 503))
+  Downloading hf_xet-1.6.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 14.0 MB/s  0:00:00
+Collecting httpcore==1.0.9 (from -r /root/ABM/benchmarks/core/requirements.lock (line 522))
+  Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting httpx==0.28.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 526))
+  Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting huggingface-hub==1.29.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 532))
+  Downloading huggingface_hub-1.29.0-py3-none-any.whl (795 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 795.8/795.8 kB 13.5 MB/s  0:00:00
+Collecting idna==3.19 (from -r /root/ABM/benchmarks/core/requirements.lock (line 536))
+  Downloading idna-3.19-py3-none-any.whl (68 kB)
+Collecting immutabledict==4.3.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 544))
+  Downloading immutabledict-4.3.1-py3-none-any.whl (5.0 kB)
+Collecting joblib==1.6.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 548))
+  Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+Collecting langdetect==1.0.9 (from -r /root/ABM/benchmarks/core/requirements.lock (line 552))
+  Downloading langdetect-1.0.9.tar.gz (981 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 981.5/981.5 kB 13.8 MB/s  0:00:00
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Collecting multidict==6.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 556))
+  Downloading multidict-6.7.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (248 kB)
+Collecting multiprocess==0.70.19 (from -r /root/ABM/benchmarks/core/requirements.lock (line 706))
+  Downloading multiprocess-0.70.19-py314-none-any.whl (160 kB)
+Collecting nltk==3.10.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 724))
+  Downloading nltk-3.10.3-py3-none-any.whl (1.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 13.2 MB/s  0:00:00
+Collecting numpy==2.5.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 728))
+  Downloading numpy-2.5.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 12.0 MB/s  0:00:01
+Collecting packaging==26.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 798))
+  Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Collecting pandas==3.0.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 804))
+  Downloading pandas-3.0.5-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.0/11.0 MB 14.5 MB/s  0:00:00
+Collecting propcache==0.5.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 848))
+  Downloading propcache-0.5.2-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (61 kB)
+Collecting pyarrow==25.0.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 973))
+  Downloading pyarrow-25.0.1-cp314-cp314-manylinux_2_28_x86_64.whl (50.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 50.1/50.1 MB 13.8 MB/s  0:00:03
+Collecting python-dateutil==2.9.0.post0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1018))
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting pyyaml==6.0.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1022))
+  Downloading pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (794 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 794.2/794.2 kB 13.5 MB/s  0:00:00
+Collecting regex==2026.9.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1099))
+  Downloading regex-2026.9.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 801.4/801.4 kB 11.0 MB/s  0:00:00
+Collecting requests==2.34.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1231))
+  Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting six==1.17.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1235))
+  Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting tqdm==4.70.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1241))
+  Downloading tqdm-4.70.0-py3-none-any.whl (80 kB)
+Collecting typing-extensions==4.16.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1248))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting urllib3==2.7.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1256))
+  Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+Collecting xxhash==4.0.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1260))
+  Downloading xxhash-4.0.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (268 kB)
+Collecting yarl==1.24.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1476))
+  Downloading yarl-1.24.5-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (110 kB)
+Building wheels for collected packages: langdetect
+  Building wheel for langdetect (pyproject.toml) ... done
+  Created wheel for langdetect: filename=langdetect-1.0.9-py3-none-any.whl size=993332 sha256=13e0d9975268261d98a9f07820b21f109b41785b1bd4bc66fa5bd0e7ffbf6850
+  Stored in directory: /root/.cache/pip/wheels/13/60/5a/f2012969b3f7413b62b7b7063d6c9b45c93004a978cbe8ea2f
+Successfully built langdetect
+Installing collected packages: xxhash, urllib3, typing-extensions, tqdm, six, regex, pyyaml, pyarrow, propcache, packaging, numpy, multidict, immutabledict, idna, hf-xet, h11, fsspec, frozenlist, filelock, dill, defusedxml, cloudpickle, click, charset-normalizer, certifi, attrs, aiohappyeyeballs, absl-py, yarl, requests, python-dateutil, multiprocess, langdetect, joblib, httpcore, anyio, aiosignal, pandas, nltk, httpx, aiohttp, huggingface-hub, datasets
+Successfully installed absl-py-2.5.0 aiohappyeyeballs-2.7.1 aiohttp-3.14.3 aiosignal-1.4.0 anyio-4.14.2 attrs-26.1.0 certifi-2026.7.22 charset-normalizer-3.5.1 click-8.5.0 cloudpickle-3.1.2 datasets-4.8.5 defusedxml-0.7.1 dill-0.4.1 filelock-3.32.5 frozenlist-1.8.0 fsspec-2026.2.0 h11-0.16.0 hf-xet-1.6.0 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.29.0 idna-3.19 immutabledict-4.3.1 joblib-1.6.0 langdetect-1.0.9 multidict-6.7.1 multiprocess-0.70.19 nltk-3.10.3 numpy-2.5.2 packaging-26.3 pandas-3.0.5 propcache-0.5.2 pyarrow-25.0.1 python-dateutil-2.9.0.post0 pyyaml-6.0.3 regex-2026.9.3 requests-2.34.2 six-1.17.0 tqdm-4.70.0 typing-extensions-4.16.0 urllib3-2.7.0 xxhash-4.0.1 yarl-1.24.5
+
+==> Preparing NLTK data for IFEval
+
+==> Preparing IFEval reference implementation
+remote: Enumerating objects: 18, done.
+remote: Counting objects: 100% (18/18), done.
+remote: Compressing objects: 100% (17/17), done.
+remote: Total 18 (delta 3), reused 7 (delta 0), pack-reused 0 (from 0)
+Receiving objects: 100% (18/18), 336.61 KiB | 9.35 MiB/s, done.
+Resolving deltas: 100% (3/3), done.
+
+==> Preparing TruthfulQA binary dataset
+remote: Enumerating objects: 25, done.
+remote: Counting objects: 100% (18/18), done.
+remote: Compressing objects: 100% (15/15), done.
+remote: Total 25 (delta 6), reused 3 (delta 3), pack-reused 7 (from 1)
+Receiving objects: 100% (25/25), 2.71 MiB | 13.50 MiB/s, done.
+Resolving deltas: 100% (8/8), done.
+
+==> Preparing MMLU-Pro dataset (pinned revision)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+README.md: 100%|████████████████████████████████████████████████████| 11.2k/11.2k [00:00<00:00, 36.1MB/s]
+data/test-00000-of-00001.parquet: downloading bytes: ████████████████████████████████| 4.11MB,  398kB/s
+data/test-00000-of-00001.parquet: reconstructing file: 100%|████████████████| 4.14MB / 4.14MB,  404kB/s
+data/validation-00000-of-00001.parquet: downloading bytes: ██████████████████████████| 39.1kB, 3.87kB/s
+data/validation-00000-of-00001.parquet: reconstructing file: 100%|██████████| 42.9kB / 42.9kB, 4.23kB/s
+Generating test split: 100%|████████████████████████████| 12032/12032 [00:00<00:00, 546747.26 examples/s]
+Generating validation split: 100%|█████████████████████████████| 70/70 [00:00<00:00, 52787.00 examples/s]
+{
+  "ifeval": {
+    "source": "google-research/google-research",
+    "revision": "641dd8404c65862627fa38865775694ee8b5c572",
+    "sha256": "67ffeee0fcb87c317c5b08a2de85557b4a7e96ada6178aa645b4954fe4b53d49"
+  },
+  "truthfulqa": {
+    "source": "sylinrl/TruthfulQA",
+    "revision": "d71c110897f5d31c5d7f309e7bc316c152f6f031",
+    "sha256": "b8d8ef1e12f98b4f2a9f47abc9765da0640b182b6c5d9b92f0c1a1f2f1e02e5c"
+  },
+  "mmlu_pro": {
+    "source": "TIGER-Lab/MMLU-Pro",
+    "revision": "24ac2da5bb7c7b42ea1a984c6b535e35a73d30b3",
+    "sha256": "21420424edfbbbc2b7f8e04d4e2ee7bbfb8a2690628ae8ad6b1b89f5053a70e3"
+  }
+}
+Installing Coding & Agent dependencies: php-cli
+Hit:1 http://deb.debian.org/debian trixie InRelease
+Hit:2 http://security.debian.org trixie-security InRelease
+Hit:3 http://deb.debian.org/debian trixie-updates InRelease
+Reading package lists... Done
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following additional packages will be installed:
+  libargon2-1 libsodium23 php-common php8.4-cli php8.4-common php8.4-opcache php8.4-readline psmisc
+Suggested packages:
+  php-pear
+The following NEW packages will be installed:
+  libargon2-1 libsodium23 php-cli php-common php8.4-cli php8.4-common php8.4-opcache php8.4-readline
+  psmisc
+0 upgraded, 9 newly installed, 0 to remove and 0 not upgraded.
+Need to get 3,589 kB of archives.
+After this operation, 19.3 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian trixie/main amd64 libargon2-1 amd64 0~20190702+dfsg-4+b2 [21.4 kB]
+Get:2 http://security.debian.org trixie-security/main amd64 libsodium23 amd64 1.0.18-1+deb13u1 [165 kB]
+Get:3 http://deb.debian.org/debian trixie/main amd64 psmisc amd64 23.7-2 [267 kB]
+Get:4 http://deb.debian.org/debian trixie/main amd64 php-common all 2:96 [13.3 kB]
+Get:5 http://deb.debian.org/debian trixie/main amd64 php-cli all 2:8.4+96 [4,416 B]
+Get:6 http://security.debian.org trixie-security/main amd64 php8.4-common amd64 8.4.24-1~deb13u1 [776 kB]
+Get:7 http://security.debian.org trixie-security/main amd64 php8.4-opcache amd64 8.4.24-1~deb13u1 [470 kB]
+Get:8 http://security.debian.org trixie-security/main amd64 php8.4-readline amd64 8.4.24-1~deb13u1 [12.7 kB]
+Get:9 http://security.debian.org trixie-security/main amd64 php8.4-cli amd64 8.4.24-1~deb13u1 [1,859 kB]
+Fetched 3,589 kB in 0s (13.6 MB/s)
+Selecting previously unselected package libargon2-1:amd64.
+(Reading database ... 29936 files and directories currently installed.)
+Preparing to unpack .../0-libargon2-1_0~20190702+dfsg-4+b2_amd64.deb ...
+Unpacking libargon2-1:amd64 (0~20190702+dfsg-4+b2) ...
+Selecting previously unselected package libsodium23:amd64.
+Preparing to unpack .../1-libsodium23_1.0.18-1+deb13u1_amd64.deb ...
+Unpacking libsodium23:amd64 (1.0.18-1+deb13u1) ...
+Selecting previously unselected package psmisc.
+Preparing to unpack .../2-psmisc_23.7-2_amd64.deb ...
+Unpacking psmisc (23.7-2) ...
+Selecting previously unselected package php-common.
+Preparing to unpack .../3-php-common_2%3a96_all.deb ...
+Unpacking php-common (2:96) ...
+Selecting previously unselected package php8.4-common.
+Preparing to unpack .../4-php8.4-common_8.4.24-1~deb13u1_amd64.deb ...
+Unpacking php8.4-common (8.4.24-1~deb13u1) ...
+Selecting previously unselected package php8.4-opcache.
+Preparing to unpack .../5-php8.4-opcache_8.4.24-1~deb13u1_amd64.deb ...
+Unpacking php8.4-opcache (8.4.24-1~deb13u1) ...
+Selecting previously unselected package php8.4-readline.
+Preparing to unpack .../6-php8.4-readline_8.4.24-1~deb13u1_amd64.deb ...
+Unpacking php8.4-readline (8.4.24-1~deb13u1) ...
+Selecting previously unselected package php8.4-cli.
+Preparing to unpack .../7-php8.4-cli_8.4.24-1~deb13u1_amd64.deb ...
+Unpacking php8.4-cli (8.4.24-1~deb13u1) ...
+Selecting previously unselected package php-cli.
+Preparing to unpack .../8-php-cli_2%3a8.4+96_all.deb ...
+Unpacking php-cli (2:8.4+96) ...
+Setting up libsodium23:amd64 (1.0.18-1+deb13u1) ...
+Setting up psmisc (23.7-2) ...
+Setting up libargon2-1:amd64 (0~20190702+dfsg-4+b2) ...
+Setting up php-common (2:96) ...
+Created symlink '/etc/systemd/system/timers.target.wants/phpsessionclean.timer' → '/usr/lib/systemd/system/phpsessionclean.timer'.
+Setting up php8.4-common (8.4.24-1~deb13u1) ...
+Creating config file /etc/php/8.4/mods-available/calendar.ini with new version
+Creating config file /etc/php/8.4/mods-available/ctype.ini with new version
+Creating config file /etc/php/8.4/mods-available/exif.ini with new version
+Creating config file /etc/php/8.4/mods-available/fileinfo.ini with new version
+Creating config file /etc/php/8.4/mods-available/ffi.ini with new version
+Creating config file /etc/php/8.4/mods-available/ftp.ini with new version
+Creating config file /etc/php/8.4/mods-available/gettext.ini with new version
+Creating config file /etc/php/8.4/mods-available/iconv.ini with new version
+Creating config file /etc/php/8.4/mods-available/pdo.ini with new version
+Creating config file /etc/php/8.4/mods-available/phar.ini with new version
+Creating config file /etc/php/8.4/mods-available/posix.ini with new version
+Creating config file /etc/php/8.4/mods-available/shmop.ini with new version
+Creating config file /etc/php/8.4/mods-available/sockets.ini with new version
+Creating config file /etc/php/8.4/mods-available/sysvmsg.ini with new version
+Creating config file /etc/php/8.4/mods-available/sysvsem.ini with new version
+Creating config file /etc/php/8.4/mods-available/sysvshm.ini with new version
+Creating config file /etc/php/8.4/mods-available/tokenizer.ini with new version
+Setting up php8.4-opcache (8.4.24-1~deb13u1) ...
+Creating config file /etc/php/8.4/mods-available/opcache.ini with new version
+Setting up php8.4-readline (8.4.24-1~deb13u1) ...
+Creating config file /etc/php/8.4/mods-available/readline.ini with new version
+Setting up php8.4-cli (8.4.24-1~deb13u1) ...
+update-alternatives: using /usr/bin/php8.4 to provide /usr/bin/php (php) in auto mode
+update-alternatives: using /usr/bin/phar8.4 to provide /usr/bin/phar (phar) in auto mode
+update-alternatives: using /usr/bin/phar.phar8.4 to provide /usr/bin/phar.phar (phar.phar) in auto mode
+Creating config file /etc/php/8.4/cli/php.ini with new version
+Setting up php-cli (2:8.4+96) ...
+update-alternatives: using /usr/bin/php.default to provide /usr/bin/php (php) in auto mode
+update-alternatives: using /usr/bin/phar.default to provide /usr/bin/phar (phar) in auto mode
+update-alternatives: using /usr/bin/phar.phar.default to provide /usr/bin/phar.phar (phar.phar) in auto mode
+Processing triggers for man-db (2.13.1-1) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+Processing triggers for php8.4-cli (8.4.24-1~deb13u1) ...
+Installing RAG dependency: pypdf
+Collecting pypdf<7,>=5
+  Downloading pypdf-6.16.2-py3-none-any.whl.metadata (7.5 kB)
+Downloading pypdf-6.16.2-py3-none-any.whl (385 kB)
+Installing collected packages: pypdf
+Successfully installed pypdf-6.16.2
+Downloading RAG embedding model: embeddinggemma
+pulling manifest
+pulling 0800cbac9c20: 100% ▕███████████████████████████████████████████ ▏ 621 MB/621 MB   14 MB/s      0s
+pulling 3901c6a1d7c2: 100% ▕████████████████████████████████████████████▏  416 B
+verifying sha256 digest
+writing manifest
+success
+Downloading BEIR SciFact dataset for external retrieval validation
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 2750k  100 2750k    0     0  7708k      0 --:--:-- --:--:-- --:--:-- 7724k
+README.md: 100%|████████████████████████████████████████████████████| 3.50k/3.50k [00:00<00:00, 17.9MB/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+data/test-00000-of-00003.parquet: downloading bytes: ████████████████████████████████|  133MB, 8.02MB/s
+data/test-00000-of-00003.parquet: reconstructing file: 100%|████████████████|  135MB /  135MB, 10.9MB/s
+data/test-00001-of-00003.parquet: downloading bytes: ████████████████████████████████|  196MB, 9.74MB/s
+data/test-00001-of-00003.parquet: reconstructing file: 100%|████████████████|  199MB /  199MB, 15.1MB/s
+data/test-00002-of-00003.parquet: downloading bytes: ████████████████████████████████|  259MB, 10.7MB/s
+data/test-00002-of-00003.parquet: reconstructing file: 100%|████████████████|  269MB /  269MB, 18.4MB/s
+Generating test split: 100%|████████████████████████████████| 1272/1272 [00:00<00:00, 1613.62 examples/s]
+README.md: 100%|████████████████████████████████████████████████████| 9.47k/9.47k [00:00<00:00, 36.1MB/s]
+standard (10 options)/test-00000-of-0000(…): downloading bytes: █████████████████████|  346MB, 12.1MB/s
+standard (10 options)/test-00000-of-0000(…): reconstructing file: 100%|█████|  346MB /  346MB, 25.3MB/s
+standard (10 options)/test-00001-of-0000(…): downloading bytes: █████████████████████|  331MB, 12.0MB/s
+standard (10 options)/test-00001-of-0000(…): reconstructing file: 100%|█████|  332MB /  332MB, 24.3MB/s
+Generating test split: 100%|████████████████████████████████| 1730/1730 [00:00<00:00, 2797.20 examples/s]
+{
+  "profile": "quick",
+  "screenSpot": "/root/.local/state/ai-benchmark/cache/vision/screenspot/quick/manifest.json",
+  "mmmuPro": "/root/.local/state/ai-benchmark/cache/vision/mmmu-pro/quick/manifest.json",
+  "sources": {
+    "screenspot": {
+      "repo": "rootsautomation/ScreenSpot",
+      "revision": "0be08781e2e188582f6131625ae1598d443b4d5d"
+    },
+    "mmmu_pro": {
+      "repo": "MMMU/MMMU_Pro",
+      "revision": "563f3e84bb3b90893083a1f039cfa13077f2302b"
+    }
+  }
+}
+ERROR: Cannot install diffusers==0.40.0, hpsv2==1.2.0, huggingface_hub<2 and >=0.28, transformers==4.57.1, transformers==4.57.2, transformers==4.57.3, transformers==4.57.4, transformers==4.57.5 and transformers==4.57.6 because these package versions have conflicting dependencies.
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts
