@@ -144,7 +144,7 @@ fi
   exit 1
 }
 "$BOOTSTRAP_VENV/bin/pip" install --upgrade pip uv >/dev/null
-"$BOOTSTRAP_VENV/bin/uv" venv --clear --managed-python --python 3 "$ROOT/.venv"
+"$BOOTSTRAP_VENV/bin/uv" venv --clear --seed --managed-python --python 3 "$ROOT/.venv"
 rm -rf "$BOOTSTRAP_VENV"
 "$ROOT/.venv/bin/python" -m pip install --upgrade pip >/dev/null
 if [[ -s "$ROOT/requirements.txt" ]]; then
