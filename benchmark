@@ -260,19 +260,6 @@ data={
   "python_environment":python_environment,
   "captured_at":datetime.now(timezone.utc).isoformat(timespec="seconds"),
 }
-
-scan_models() {
-  local machine="$(hostname -s 2>/dev/null || hostname)"
-  (($# == 0)) || { echo "ERROR: benchmark scan does not accept arguments." >&2; exit 2; }
-  [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
-    echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
-    echo "Run ./bootstrap.sh first." >&2
-    exit 1
-  }
-  local scan_dir="$RESULTS_ROOT/scans/$machine"
-  mkdir -p "$scan_dir"
-  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$scan_dir/eligible.models.tsv" --report
-}
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
 PY
   "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" <<'PY'
@@ -316,6 +303,19 @@ PY
   echo "The SSH session or terminal may now be closed."
   echo "Status: ./benchmark-v4 status $run_id"
   echo "Stop:   ./benchmark-v4 stop $run_id"
+}
+
+scan_models() {
+  local machine="$(hostname -s 2>/dev/null || hostname)"
+  (($# == 0)) || { echo "ERROR: benchmark scan does not accept arguments." >&2; exit 2; }
+  [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
+    echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
+    echo "Run ./bootstrap.sh first." >&2
+    exit 1
+  }
+  local scan_dir="$RESULTS_ROOT/scans/$machine"
+  mkdir -p "$scan_dir"
+  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$scan_dir/eligible.models.tsv" --report
 }
 
 show_status() {
