@@ -1,0 +1,491 @@
+# Global benchmark catalog. Resource values are viability minima for RAM, VRAM, and free disk.
+
+[[models]]
+enabled = true
+model = "deepseek-coder:33b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Large open coding comparison model"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "llama3.1:70b"
+backend = "ollama"
+suites = ["core", "rag", "web"]
+modes = ["standard"]
+web = true
+notes = "Large open general-model comparison"
+minimum_ram_gib = 48
+minimum_vram_gib = 18
+minimum_free_disk_gib = 40
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "llama3.1:405b"
+backend = "ollama"
+suites = ["core", "rag", "web"]
+modes = ["standard"]
+web = true
+notes = "Extreme-scale open general-model comparison"
+minimum_ram_gib = 192
+minimum_vram_gib = 80
+minimum_free_disk_gib = 180
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:235b-a22b"
+backend = "ollama"
+suites = ["core", "coding-agent", "rag", "web"]
+modes = ["nothinking", "thinking"]
+web = true
+notes = "Extreme-scale MoE general and coding comparison"
+minimum_ram_gib = 160
+minimum_vram_gib = 48
+minimum_free_disk_gib = 140
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen2.5vl:32b"
+backend = "ollama"
+suites = ["vision"]
+modes = ["standard"]
+web = false
+notes = "Large open multimodal vision comparison"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen2.5-coder:3b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Small coder"
+minimum_ram_gib = 6
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-vl:8b-thinking"
+backend = "ollama"
+suites = ["vision"]
+modes = ["standard"]
+web = false
+notes = "Stronger thinking Vision comparison"
+minimum_ram_gib = 10
+minimum_vram_gib = 3
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-coder:30b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Too heavy by default"
+minimum_ram_gib = 28
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-vl:8b-instruct"
+backend = "ollama"
+suites = ["vision"]
+modes = ["standard"]
+web = false
+notes = "Stronger no-thinking Vision comparison"
+minimum_ram_gib = 10
+minimum_vram_gib = 3
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "small"
+backend = "whispercpp"
+suites = ["speech"]
+modes = ["standard"]
+web = false
+capabilities = ["stt"]
+language = "nl"
+notes = "Multilingual whisper.cpp baseline"
+minimum_ram_gib = 2
+minimum_vram_gib = 0
+minimum_free_disk_gib = 2
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3.8:27b"
+backend = "ollama"
+suites = ["core", "coding-agent", "rag", "vision", "web"]
+modes = ["nothinking", "thinking"]
+web = true
+notes = "Enable when desired"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:4b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent", "web"]
+modes = ["nothinking", "thinking"]
+web = true
+notes = "Small comparison model"
+minimum_ram_gib = 6
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:8b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent"]
+modes = ["nothinking", "thinking"]
+web = false
+notes = "May be slow"
+minimum_ram_gib = 10
+minimum_vram_gib = 3
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "facebook/musicgen-medium"
+backend = "transformers-musicgen"
+suites = ["music"]
+modes = ["standard"]
+web = false
+revision = "main"
+capabilities = ["text"]
+guidance = 3.0
+top_k = 250
+temperature = 1.0
+notes = "Optional larger MusicGen model; AudioCraft documentation recommends >=16 GB GPU memory for medium models"
+minimum_ram_gib = 8
+minimum_vram_gib = 4
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:30b-a3b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent", "web"]
+modes = ["nothinking", "thinking"]
+web = true
+notes = "MoE comparison"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3.6:27b"
+backend = "ollama"
+suites = ["core", "coding-agent", "rag", "vision"]
+modes = ["nothinking", "thinking"]
+web = false
+notes = "Current multimodal general model; enable when suitable"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-vl:4b-thinking"
+backend = "ollama"
+suites = ["vision"]
+modes = ["standard"]
+web = false
+notes = "Official thinking Vision baseline; 3.3 GB"
+minimum_ram_gib = 6
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3.5:35b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent"]
+modes = ["nothinking", "thinking"]
+web = false
+notes = "Larger model"
+minimum_ram_gib = 36
+minimum_vram_gib = 14
+minimum_free_disk_gib = 32
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:14b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent"]
+modes = ["nothinking", "thinking"]
+web = false
+notes = "Enable only when desired"
+minimum_ram_gib = 16
+minimum_vram_gib = 6
+minimum_free_disk_gib = 14
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen2.5-coder:7b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Coder comparison"
+minimum_ram_gib = 10
+minimum_vram_gib = 3
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "stabilityai/sd-turbo"
+backend = "diffusers"
+suites = ["image"]
+modes = ["standard"]
+web = false
+revision = "main"
+steps = 1
+guidance = 0.0
+offload = "cpu-offload"
+notes = "Stronger turbo baseline; much larger download"
+minimum_ram_gib = 8
+minimum_vram_gib = 3
+minimum_free_disk_gib = 6
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "large-v3-turbo"
+backend = "whispercpp"
+suites = ["speech"]
+modes = ["standard"]
+web = false
+capabilities = ["stt"]
+language = "nl"
+notes = "Large fast Whisper comparison; enable on capable workers"
+minimum_ram_gib = 4
+minimum_vram_gib = 0
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-coder-next"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Too heavy by default"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen2.5-coder:32b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Too heavy by default"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3-vl:4b-instruct"
+backend = "ollama"
+suites = ["vision"]
+modes = ["standard"]
+web = false
+notes = "Official no-thinking Vision baseline; 3.3 GB"
+minimum_ram_gib = 6
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "vits-piper-nl_NL-pim-medium"
+backend = "sherpa-onnx-tts"
+suites = ["speech"]
+modes = ["standard"]
+web = false
+capabilities = ["tts"]
+language = "nl_NL"
+speaker = 0
+notes = "Second Dutch voice for model comparison"
+minimum_ram_gib = 2
+minimum_vram_gib = 0
+minimum_free_disk_gib = 2
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen2.5-coder:14b"
+backend = "ollama"
+suites = ["coding-agent"]
+modes = ["standard"]
+web = false
+notes = "Enable only when desired"
+minimum_ram_gib = 16
+minimum_vram_gib = 6
+minimum_free_disk_gib = 14
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "segmind/tiny-sd"
+backend = "diffusers"
+suites = ["image"]
+modes = ["standard"]
+web = false
+revision = "main"
+steps = 20
+guidance = 7.5
+offload = "none"
+notes = "Universal lightweight 512px baseline (~1.1 GB repo)"
+minimum_ram_gib = 8
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "facebook/musicgen-melody"
+backend = "transformers-musicgen"
+suites = ["music"]
+modes = ["standard"]
+web = false
+revision = "main"
+capabilities = ["text", "melody"]
+guidance = 3.0
+top_k = 250
+temperature = 1.0
+notes = "Optional melody-conditioned MusicGen model; enable on machines with enough memory"
+minimum_ram_gib = 8
+minimum_vram_gib = 4
+minimum_free_disk_gib = 8
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "facebook/musicgen-small"
+backend = "transformers-musicgen"
+suites = ["music"]
+modes = ["standard"]
+web = false
+revision = "main"
+capabilities = ["text"]
+guidance = 3.0
+top_k = 250
+temperature = 1.0
+notes = "Universal MusicGen baseline; ~300M parameters, CC-BY-NC-4.0"
+minimum_ram_gib = 4
+minimum_vram_gib = 2
+minimum_free_disk_gib = 4
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "gpt-oss:20b"
+backend = "ollama"
+suites = ["core", "coding-agent", "rag", "web"]
+modes = ["low", "medium", "high"]
+web = true
+notes = "Enable when desired"
+minimum_ram_gib = 24
+minimum_vram_gib = 8
+minimum_free_disk_gib = 20
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "qwen3:32b"
+backend = "ollama"
+suites = ["core", "rag", "coding-agent"]
+modes = ["nothinking", "thinking"]
+web = false
+notes = "Enable if practical"
+minimum_ram_gib = 32
+minimum_vram_gib = 12
+minimum_free_disk_gib = 28
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "medium"
+backend = "whispercpp"
+suites = ["speech"]
+modes = ["standard"]
+web = false
+capabilities = ["stt"]
+language = "nl"
+notes = "Stronger multilingual comparison; larger download"
+minimum_ram_gib = 4
+minimum_vram_gib = 0
+minimum_free_disk_gib = 3
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "llama3.3:70b-instruct-q3_K_M"
+backend = "ollama"
+suites = ["core", "rag"]
+modes = ["standard"]
+web = false
+notes = "Large comparison model"
+minimum_ram_gib = 48
+minimum_vram_gib = 18
+minimum_free_disk_gib = 32
+allow_cpu_ram = true
+
+[[models]]
+enabled = true
+model = "vits-piper-nl_NL-alex-medium"
+backend = "sherpa-onnx-tts"
+suites = ["speech"]
+modes = ["standard"]
+web = false
+capabilities = ["tts"]
+language = "nl_NL"
+speaker = 0
+notes = "Dutch single-speaker VITS/Piper baseline through sherpa-onnx"
+minimum_ram_gib = 2
+minimum_vram_gib = 0
+minimum_free_disk_gib = 2
+allow_cpu_ram = true

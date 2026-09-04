@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib import error, parse, request
 
-from lib.benchlib import PowerSampler, atomic_json, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, call_performance_summary, distribution_summary, evaluate_checks, load_json, mode_to_think, response_metrics, utc_now
 
 PROFILE_REPEATS = {"quick": 1, "standard": 3, "full": 5}
 PROFILE_TESTS = {"quick": ["W1", "W2"], "standard": ["W1", "W2", "W3"], "full": ["W1", "W2", "W3"]}
@@ -100,7 +100,7 @@ class _TextExtractor(HTMLParser):
 
 
 def _cache_root(run_dir: Path) -> Path:
-    return run_dir.parents[2] / "cache" / "web"
+    return benchmark_cache_root(run_dir) / "web"
 
 
 def _prepared(run_dir: Path) -> dict[str, Any]:

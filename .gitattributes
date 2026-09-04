@@ -1,4 +1,5 @@
 # Keep executable source files portable across Linux, macOS, and WSL.
 *.sh text eol=lf
 *.py text eol=lf
+benchmark text eol=lf
 benchmark-v4 text eol=lf

@@ -12,7 +12,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from lib.benchlib import atomic_json, load_json, ollama_chat, response_metrics, utc_now
+from lib.benchlib import atomic_json, benchmark_cache_root, load_json, ollama_chat, response_metrics, utc_now
 
 PROFILE_COUNTS = {
     "quick": {"ifeval": 10, "truthfulqa": 10, "mmlu_pro": 14},
@@ -25,8 +25,7 @@ IFEVAL_MINI_EXCLUDED_KEYS = {2078}
 
 
 def cache_root_from_run(run_dir: Path) -> Path:
-    # .../<root>/runs/<machine>/<run-id> -> <root>/cache/core
-    return run_dir.parents[2] / "cache" / "core"
+    return benchmark_cache_root(run_dir) / "core"
 
 
 def _stable_score(namespace: str, value: str) -> str:

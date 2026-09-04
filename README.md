@@ -41,6 +41,8 @@ Use `./scripts/update-python-dependencies.sh` to update Python packages to their
 
 Results are stored in `${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark` on Ubuntu/Debian and WSL2, and in `$HOME/Library/Application Support/ai-benchmark` on macOS. Set `BENCH_RESULTS_DIR` to use a different location.
 
+`OLLAMA_MODELS` controls the Ollama model filesystem; the machine scan uses that location for Ollama model capacity and reports its used, free, and total space separately. Reusable datasets and evaluator caches default to `OLLAMA_MODELS/benchmark-cache`, on the same filesystem as the models. Retained run results, logs, reports, and source snapshots use `BENCH_RESULTS_DIR` and can remain on the root filesystem. Set `BENCH_CACHE_DIR` to override the cache location explicitly.
+
 Preflight requires at least 20 GiB free on the results filesystem before it downloads dependencies, datasets, and models. Set `BENCH_MIN_FREE_GB` to a different non-negative whole-number threshold when the selected model configuration requires more capacity or for a deliberately small test run.
 
 Preflight warns, without blocking the run, when CPU load, available Linux memory, active Docker containers, or NVIDIA compute processes may affect a raw performance measurement. The observed readiness state is retained in each run's machine metadata.
@@ -57,7 +59,7 @@ Supported environments are Ubuntu/Debian, Ubuntu on WSL2, and macOS. Fedora, Arc
 
 Coding & Agent runs include LiveCodeBench by default. It executes generated code in a Docker sandbox with network access disabled; use `--without-livecodebench` only to skip that external evaluator.
 
-Storage, memory, and accelerator requirements depend on the enabled rows in the selected machine configuration and the chosen profile. Reserve capacity for the selected model files, downloaded datasets, Python environments, benchmark cache, and retained raw results. The `full` profile performs more repeats and complete external datasets, so it requires materially more runtime and storage than `quick` or `standard`.
+Storage, memory, and accelerator requirements depend on the models allowed by the local machine scan and the chosen profile. Reserve capacity for the selected model files, downloaded datasets, Python environments, benchmark cache, and retained raw results. The `full` profile performs more repeats and complete external datasets, so it requires materially more runtime and storage than `quick` or `standard`.
 
 Bootstrap creates the project environment with the latest stable CPython through `uv`; the LiveCodeBench environment uses the same interpreter. CI validates the repository against Python 3.14 as the current compatibility baseline. Every run records the installed Python, Ollama, Docker, operating-system, and available hardware metadata, so dependency and host updates remain visible in the result evidence.
 
@@ -67,13 +69,41 @@ Bootstrap creates the project environment with the latest stable CPython through
 ./benchmark status
 ```
 
-Results are written outside Git by default. Every run freezes its source, machine configuration, dataset manifests, exact Ollama model identity, and Python environment fingerprint. A resume is rejected if a model tag resolves to a different digest or shared Python dependencies have changed.
+Results are written outside Git by default. Every run freezes its source, scan-derived eligible model configuration, dataset manifests, exact Ollama model identity, and Python environment fingerprint. A resume is rejected if a model tag resolves to a different digest or shared Python dependencies have changed.
 
 Preflight refreshes every selected Ollama model tag before a new run or resume. A tag that has moved to a new model digest starts a new run with that updated identity; resume remains intentionally blocked because it must use the original digest.
+
+### Cleanup after a successful run
+
+Use `--cleanup-on-success` to discard every installed Ollama model except the models named with `--keep-model`. Downloaded model caches for Image, Music, Speech, and other benchmark backends are deliberately retained, so a later run can reuse them instead of downloading the model again. Cleanup runs only when the benchmark has fully completed; failed or stopped runs retain all assets so they can be inspected or resumed. Run evidence in `BENCH_RESULTS_DIR/runs` is always retained. Because this removes all non-retained Ollama models, list every Ollama model you want to preserve:
+
+```bash
+./benchmark start all --profile standard --machine ai-worker-hp \
+  --cleanup-on-success \
+  --keep-model qwen3:8b \
+  --keep-model embeddinggemma
+```
+
+The cleanup report is written to `summary/cleanup.json`. To choose model-by-model after an already completed run, use `./benchmark cleanup <run-id>`. It reads that run's frozen machine scan and asks only about models selected for its benchmark suites. Choosing removal deletes that model's local cache too; shared tools, datasets, and run evidence remain untouched. This interactive command is the recommended cleanup workflow for normal use.
 
 Enabled Image and Music model rows use the Hugging Face `main` revision and are refreshed during preflight; each run records the resolved revision. Fixed benchmark datasets and evaluator assets remain pinned so their scoring contract does not move with upstream releases.
 
 Quality, performance, efficiency, and stability remain separate dimensions. Reports do not combine unrelated metrics into a universal score. See [METHODOLOGY.md](METHODOLOGY.md), [RESULTS_SCHEMA.md](RESULTS_SCHEMA.md), and [SECURITY.md](SECURITY.md).
+
+## Machine scan
+
+`config/models.toml` is the single global catalog. It defines every candidate model, its benchmark suites, and hard RAM, VRAM, and free-disk requirements. The local scan classifies each model as GPU-resident, hybrid offload, CPU/RAM, or insufficient resources. The report is local evidence and does not modify or push configuration.
+
+```bash
+./.venv/bin/python scripts/scan_machine.py \
+	--models config/models.toml \
+	--output "$BENCH_RESULTS_DIR/machine-scan.json" \
+	--eligible-config "$BENCH_RESULTS_DIR/eligible.models.tsv"
+```
+
+`benchmark start` performs this scan itself and uses only the generated `eligible.models.tsv` file.
+
+Use `./benchmark scan` on the current machine to print the allowed models first, followed by excluded models as `model | reason`.
 
 ## Language policy
 

@@ -16,22 +16,31 @@ else
   BENCH_RESULTS_ROOT="${BENCH_RESULTS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/ai-benchmark}"
 fi
 export BENCH_RESULTS_ROOT
-export BENCH_CACHE_DIR="${BENCH_CACHE_DIR:-$BENCH_RESULTS_ROOT/cache}"
+if [[ -z "${BENCH_CACHE_DIR:-}" ]]; then
+  ollama_models_dir="${OLLAMA_MODELS:-}"
+  if [[ -z "$ollama_models_dir" ]] && command -v systemctl >/dev/null 2>&1; then
+    ollama_models_dir="$(systemctl show ollama --property=Environment --value 2>/dev/null | sed -n 's/.*OLLAMA_MODELS=\([^ ]*\).*/\1/p' | head -n1)"
+  fi
+  export BENCH_CACHE_DIR="${ollama_models_dir:-$HOME/.ollama/models}/benchmark-cache"
+else
+  export BENCH_CACHE_DIR
+fi
 BENCH_MIN_FREE_GB="${BENCH_MIN_FREE_GB:-20}"
 
 [[ "$BENCH_MIN_FREE_GB" =~ ^[0-9]+$ ]] || {
   echo "ERROR: BENCH_MIN_FREE_GB must be a non-negative whole number." >&2
   exit 2
 }
-available_kib="$(df -Pk "$BENCH_RESULTS_ROOT" | awk 'NR==2 {print $4}')"
+mkdir -p "$BENCH_CACHE_DIR"
+available_kib="$(df -Pk "$BENCH_CACHE_DIR" | awk 'NR==2 {print $4}')"
 [[ "$available_kib" =~ ^[0-9]+$ ]] || {
-  echo "ERROR: could not determine free disk space for $BENCH_RESULTS_ROOT." >&2
+  echo "ERROR: could not determine free disk space for $BENCH_CACHE_DIR." >&2
   exit 1
 }
 required_kib=$((BENCH_MIN_FREE_GB * 1024 * 1024))
 if ((available_kib < required_kib)); then
   available_gb=$((available_kib / 1024 / 1024))
-  echo "ERROR: only ${available_gb} GiB is free in $BENCH_RESULTS_ROOT; ${BENCH_MIN_FREE_GB} GiB is required." >&2
+  echo "ERROR: only ${available_gb} GiB is free in $BENCH_CACHE_DIR; ${BENCH_MIN_FREE_GB} GiB is required." >&2
   echo "Set BENCH_MIN_FREE_GB to override the preflight threshold." >&2
   exit 1
 fi
@@ -116,6 +125,10 @@ for r in parse_model_rows(path):
     if relevant:
         models.append(r['model'])
 for model in dict.fromkeys(models):
-  print(f'Refreshing model tag: {model}', flush=True)
-  subprocess.run(['ollama', 'pull', model], check=True)
+  available = subprocess.run(['ollama', 'show', model], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+  if available:
+    print(f'Model available; reusing local copy: {model}', flush=True)
+  else:
+    print(f'Downloading missing model: {model}', flush=True)
+    subprocess.run(['ollama', 'pull', model], check=True)
 PY

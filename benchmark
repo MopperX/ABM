@@ -39,16 +39,20 @@ Usage:
   ./benchmark                            interactive checklist
   ./benchmark start all [options]
   ./benchmark start core rag vision [options]
+  ./benchmark scan
   ./benchmark status [run-id]
   ./benchmark stop [run-id] [--force]
   ./benchmark resume [run-id]
+  ./benchmark cleanup [run-id]
   ./benchmark list-runs
   ./benchmark environment
 
 Start options:
   --profile quick|standard|full
-  --machine NAME       use config/machines/NAME.models.tsv
+  --machine NAME       label results with the measured machine name
   --without-livecodebench  skip the isolated external LiveCodeBench suite
+  --cleanup-on-success     remove non-retained Ollama models after success
+  --keep-model MODEL       retain this Ollama model during cleanup (repeatable)
 
 Environment:
   BENCH_RESULTS_DIR    override the persistent results directory
@@ -56,7 +60,8 @@ TXT
 }
 
 show_environment() {
-  "$PY" - "$RESULTS_ROOT" <<'PY'
+  configure_cache_dir
+  "$PY" - "$RESULTS_ROOT" "$BENCH_CACHE_DIR" <<'PY'
 import platform, shutil, subprocess, sys
 
 def version(command):
@@ -71,7 +76,7 @@ print(f"Python:   {sys.version.splitlines()[0]}")
 print(f"Ollama:   {version(['ollama', '--version'])}")
 print(f"Docker:   {version(['docker', 'version', '--format', '{{.Server.Version}}'])}")
 print(f"Results:  {sys.argv[1]}")
-print(f"Cache:    {sys.argv[1]}/cache")
+print(f"Cache:    {sys.argv[2]}")
 print("Models:")
 models = version(['ollama', 'list'])
 print(models if models != "not installed" else "  Ollama is not installed")
@@ -106,20 +111,22 @@ PY
 }
 
 find_machine_config() {
-  local name="$1"
-  local path="$ROOT/config/machines/$name.models.tsv"
+  local path="$ROOT/config/models.toml"
   [[ -f "$path" ]] || {
-    echo "ERROR: machine configuration is missing: $path" >&2
-    echo "Available:" >&2
-    local f base
-    for f in "$ROOT"/config/machines/*.models.tsv; do
-      [[ -e "$f" ]] || continue
-      base="$(basename "$f" .models.tsv)"
-      echo "  $base" >&2
-    done
+    echo "ERROR: global model catalog is missing: $path" >&2
     exit 1
   }
   echo "$path"
+}
+
+configure_cache_dir() {
+  [[ -n "${BENCH_CACHE_DIR:-}" ]] && { export BENCH_CACHE_DIR; return; }
+  local ollama_models_dir="${OLLAMA_MODELS:-}"
+  if [[ -z "$ollama_models_dir" ]] && command -v systemctl >/dev/null 2>&1; then
+    ollama_models_dir="$(systemctl show ollama --property=Environment --value 2>/dev/null | sed -n 's/.*OLLAMA_MODELS=\([^ ]*\).*/\1/p' | head -n1)"
+  fi
+  ollama_models_dir="${ollama_models_dir:-$HOME/.ollama/models}"
+  export BENCH_CACHE_DIR="$ollama_models_dir/benchmark-cache"
 }
 
 interactive() {
@@ -127,9 +134,14 @@ interactive() {
     echo "dialog is missing. Run ./bootstrap.sh first, or use CLI mode." >&2
     exit 1
   }
-  local choices profile machine
-  choices=$(dialog --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 10 \
-    all "ALL - all benchmarks" off \
+  local choices profile machine selection
+  selection=$(dialog --ascii-lines --stdout --menu "Select benchmarks" 13 72 2 \
+    all "ALL - all benchmarks" \
+    custom "Choose individual benchmarks") || exit 0
+  if [[ "$selection" == "all" ]]; then
+    choices=$(printf '%s\n' "${BENCHES[@]}")
+  else
+    choices=$(dialog --ascii-lines --stdout --separate-output --checklist "Select benchmarks (space = toggle)" 20 72 9 \
     core "Core LLM" on \
     coding-agent "Coding & Agent" off \
     rag "RAG / Documents" off \
@@ -138,19 +150,10 @@ interactive() {
     speech "Speech & Audio" off \
     music "Music Generation" off \
     web "Web / Research (local SearXNG)" off) || exit 0
-  [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
-  if grep -qx all <<<"$choices"; then
-    choices=$(printf '%s\n' "${BENCHES[@]}")
   fi
-  profile=$(dialog --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
-  local configs=() f name
-  for f in "$ROOT"/config/machines/*.models.tsv; do
-    [[ -e "$f" ]] || continue
-    name="$(basename "$f" .models.tsv)"
-    [[ "$name" == "template" ]] && continue
-    configs+=("$name" "$f" off)
-  done
-  machine=$(dialog --stdout --radiolist "Machine configuration" 18 76 10 "${configs[@]}") || exit 0
+  [[ -n "$choices" ]] || { echo "No benchmarks selected."; exit 0; }
+  profile=$(dialog --ascii-lines --stdout --radiolist "Profile" 12 55 4 quick "Quick validation" off standard "Primary comparison" on full "Complete external sets" off) || exit 0
+  machine="$(hostname -s 2>/dev/null || hostname)"
   local with_lcb=0
   if grep -qx coding-agent <<<"$choices"; then
     with_lcb=1
@@ -167,13 +170,15 @@ interactive() {
 }
 
 start_run() {
-  local profile="standard" machine="" with_lcb=-1 selected=()
+  local profile="standard" machine="" with_lcb=-1 cleanup_on_success=0 keep_models=() selected=()
   while (($#)); do
     case "$1" in
       --profile) profile="$2"; shift 2 ;;
       --machine) machine="$2"; shift 2 ;;
       --with-livecodebench) with_lcb=1; shift ;;
       --without-livecodebench) with_lcb=0; shift ;;
+      --cleanup-on-success) cleanup_on_success=1; shift ;;
+      --keep-model) keep_models+=("$2"); shift 2 ;;
       --*) echo "Unknown option: $1" >&2; exit 2 ;;
       *) selected+=("$1"); shift ;;
     esac
@@ -190,18 +195,20 @@ start_run() {
   done
   if [[ -z "$machine" ]]; then
     machine="$(hostname -s 2>/dev/null || hostname)"
-    [[ -f "$ROOT/config/machines/$machine.models.tsv" ]] || {
-      echo "ERROR: no machine configuration for hostname '$machine'. Use --machine NAME." >&2
-      exit 2
-    }
   fi
-  local machine_config; machine_config="$(find_machine_config "$machine")"
+  local machine_config; machine_config="$(find_machine_config)"
+  configure_cache_dir
   [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
     echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
     echo "Run ./bootstrap.sh first." >&2
     exit 1
   }
   local selected_csv; selected_csv="$(IFS=,; echo "${selected[*]}")"
+
+  local scan_dir="$RESULTS_ROOT/scans/$machine"
+  mkdir -p "$scan_dir"
+  machine_config="$scan_dir/eligible.models.tsv"
+  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$machine_config"
 
   if ((with_lcb)) && [[ " $selected_csv " != *"coding-agent"* ]]; then
     echo "ERROR: --with-livecodebench requires coding-agent to be selected." >&2; exit 2
@@ -275,18 +282,22 @@ data={
 }
 out.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
 PY
-  "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" <<'PY'
+  local keep_models_json
+  keep_models_json="$(printf '%s\n' "${keep_models[@]}" | "$PY" -c 'import json,sys; print(json.dumps([x.strip() for x in sys.stdin if x.strip()]))')"
+  "$PY" - "$run_dir" "$run_id" "$machine" "$profile" "$selected_csv" "$with_lcb" "$cleanup_on_success" "$keep_models_json" "$BENCH_CACHE_DIR" <<'PY'
 import json,sys
 from datetime import datetime,timezone
 from pathlib import Path
 run=Path(sys.argv[1]); rid=sys.argv[2]; machine=sys.argv[3]; profile=sys.argv[4]; selected=sys.argv[5].split(','); with_lcb=sys.argv[6]=='1'
+cleanup_on_success=sys.argv[7]=='1'; keep_models=json.loads(sys.argv[8]); cache_dir=sys.argv[9]
 state={
  "schema_version":1,"run_id":rid,"machine":machine,"profile":profile,"selected_benchmarks":selected,"with_livecodebench":with_lcb,
  "status":"starting","created_at":datetime.now(timezone.utc).isoformat(timespec='seconds'),"started_at":None,
- "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{}
+ "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{},
+ "cleanup":{"on_success":cleanup_on_success,"remove_cache":false,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
 }
 (run/'state.json').write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-(run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','cleanup','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 PY
   "$PY" - "$run_dir/state.json" <<'PY'
 import json,sys
@@ -314,8 +325,24 @@ PY
   echo "Results:     $run_dir"
   echo
   echo "The SSH session or terminal may now be closed."
-  echo "Status: ./benchmark-v4 status $run_id"
-  echo "Stop:   ./benchmark-v4 stop $run_id"
+  echo "Status: ./benchmark status $run_id"
+  echo "Stop:   ./benchmark stop $run_id"
+  if ((cleanup_on_success)); then
+    echo "Cleanup: enabled; retaining: ${keep_models[*]:-(none)}"
+  fi
+}
+
+scan_models() {
+  local machine="$(hostname -s 2>/dev/null || hostname)"
+  (($# == 0)) || { echo "ERROR: benchmark scan does not accept arguments." >&2; exit 2; }
+  [[ -d "$RESULTS_ROOT" && -w "$RESULTS_ROOT" ]] || {
+    echo "ERROR: results directory is missing or not writable: $RESULTS_ROOT" >&2
+    echo "Run ./bootstrap.sh first." >&2
+    exit 1
+  }
+  local scan_dir="$RESULTS_ROOT/scans/$machine"
+  mkdir -p "$scan_dir"
+  "$PY" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$scan_dir/latest.json" --eligible-config "$scan_dir/eligible.models.tsv" --report
 }
 
 show_status() {
@@ -364,6 +391,7 @@ stop_run() {
 resume_run() {
   local run_dir; run_dir="$(resolve_run "${1:-}")"
   [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
+  configure_cache_dir
   local machine; machine="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["machine"])' "$run_dir/state.json")"
   local machine_config="$run_dir/config/machine.models.tsv"
   local source_file="$run_dir/raw/source.json"
@@ -384,7 +412,7 @@ resume_run() {
   fi
   if [[ ! -f "$machine_config" ]]; then
     # Backwards compatibility for runs created before per-run config snapshots existed.
-    machine_config="$(find_machine_config "$machine")"
+    machine_config="$(find_machine_config)"
   fi
   local selected_csv profile with_lcb
   selected_csv="$($PY -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["selected_benchmarks"]))' "$run_dir/state.json")"
@@ -451,14 +479,24 @@ for _,line in sorted(rows): print(line)
 PY
 }
 
+cleanup_run() {
+  local run_dir; run_dir="$(resolve_run "${1:-}")"
+  [[ -n "$run_dir" ]] || { echo "No runs found."; exit 1; }
+  local cleanup_script="$run_dir/source/scripts/cleanup.py"
+  [[ -f "$cleanup_script" ]] || cleanup_script="$ROOT/scripts/cleanup.py"
+  "$PY" "$cleanup_script" --run-dir "$run_dir" --interactive
+}
+
 cmd="${1:-}"
 case "$cmd" in
   "") interactive ;;
   start) shift; start_run "$@" ;;
+  scan) shift; scan_models "$@" ;;
   status) shift; show_status "${1:-}" ;;
   stop) shift; stop_run "$@" ;;
   resume) shift; resume_run "${1:-}" ;;
   list-runs) list_runs ;;
+  cleanup) shift; cleanup_run "${1:-}" ;;
   environment) show_environment ;;
   -h|--help|help) usage ;;
   *) echo "Unknown command: $cmd" >&2; usage; exit 2 ;;

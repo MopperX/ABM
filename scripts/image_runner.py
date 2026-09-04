@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from urllib import request, error
 
-from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, distribution_summary, load_json, parse_model_rows, utc_now
 
 PRACTICAL={'quick':['I1','I3','I4'],'standard':['I1','I2','I3','I4','I5','I6','I7'],'full':['I1','I2','I3','I4','I5','I6','I7']}
 JUDGE_MODEL='qwen3-vl:4b-instruct'
@@ -29,7 +29,7 @@ def parse_image_models(path:Path)->list[dict[str,Any]]:
     return out
 
 def external_counts(run_dir:Path,profile:str)->tuple[int,int]:
-    cache=run_dir.parents[2]/'cache'/'image'
+    cache=benchmark_cache_root(run_dir)/'image'
     g=cache/'geneval2'/profile/'manifest.json'; h=cache/'hps'/profile/'manifest.json'
     return (int(load_json(g).get('count',0)) if g.exists() else 0,int(load_json(h).get('count',0)) if h.exists() else 0)
 
@@ -137,7 +137,7 @@ def _seed(base:int,kind:str,index:int)->int:
 
 
 def run_image(*,repo_root:Path,run_dir:Path,image_config:Path,profile:str,api:str,seed:int,is_completed,mark_completed,should_stop,set_current)->dict[str,Any]:
-    cache=run_dir.parents[2]/'cache'/'image'; practical={x['id']:x for x in load_json(repo_root/'benchmarks/image/fixtures/practical/tests.json')['tests']}
+    cache=benchmark_cache_root(run_dir)/'image'; practical={x['id']:x for x in load_json(repo_root/'benchmarks/image/fixtures/practical/tests.json')['tests']}
     gm=load_json(cache/'geneval2'/profile/'manifest.json'); hm=load_json(cache/'hps'/profile/'manifest.json')
     configs=parse_image_models(image_config); results=[]
     for cfg in configs:

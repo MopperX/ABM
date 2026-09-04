@@ -138,9 +138,9 @@ def run_livecodebench(
     atomic_json(attempt/"command.json",command_meta)
 
     env=os.environ.copy()
-    results_root=run_dir.parents[2]
-    env.setdefault("HF_HOME",str(results_root/"cache/huggingface"))
-    env.setdefault("MODELSCOPE_CACHE",str(results_root/"cache/modelscope"))
+    cache_root=Path(env.get("BENCH_CACHE_DIR",run_dir.parents[2]/"cache"))
+    env.setdefault("HF_HOME",str(cache_root/"livecodebench/huggingface"))
+    env.setdefault("MODELSCOPE_CACHE",str(cache_root/"livecodebench/modelscope"))
     env.setdefault("TOKENIZERS_PARALLELISM","false")
     Path(env["HF_HOME"]).mkdir(parents=True,exist_ok=True)
     Path(env["MODELSCOPE_CACHE"]).mkdir(parents=True,exist_ok=True)

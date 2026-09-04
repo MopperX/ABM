@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import signal
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -391,6 +392,16 @@ def main() -> int:
         summary["status"] = state["status"]
         atomic_json(run_dir / "summary" / "summary.json", summary)
         save_state(run_dir, state)
+        if state["status"] == "completed" and (state.get("cleanup") or {}).get("on_success"):
+            cleanup = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "scripts" / "cleanup.py"), "--run-dir", str(run_dir)],
+                text=True,
+                capture_output=True,
+            )
+            if cleanup.returncode != 0:
+                atomic_json(run_dir / "summary" / "cleanup.json", {
+                    "status": "failed_to_start", "error": cleanup.stderr.strip() or cleanup.stdout.strip()
+                })
         return 0
     except Exception as exc:
         state["status"] = "failed"

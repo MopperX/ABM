@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-from lib.benchlib import PowerSampler, atomic_json, distribution_summary, load_json, parse_model_rows, utc_now
+from lib.benchlib import PowerSampler, atomic_json, benchmark_cache_root, distribution_summary, load_json, parse_model_rows, utc_now
 
 PRACTICAL = {
     "quick": ["M1", "M3", "M6"],
@@ -39,7 +39,7 @@ def parse_music_models(path: Path) -> list[dict[str, Any]]:
     return out
 
 def _cache_root(run_dir: Path) -> Path:
-    return run_dir.parents[2] / "cache" / "music"
+    return benchmark_cache_root(run_dir) / "music"
 
 
 def _prepared(run_dir: Path) -> dict[str, Any]:

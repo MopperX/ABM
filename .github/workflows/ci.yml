@@ -40,23 +40,20 @@ jobs:
           sed '1,2d' "$generated_lock" > "$RUNNER_TEMP/generated-lock"
           diff -u "$RUNNER_TEMP/committed-lock" "$RUNNER_TEMP/generated-lock"
 
-      - name: Validate machine configurations
+      - name: Validate global model catalog
         run: |
           python - <<'PY'
           from pathlib import Path
 
           from lib.benchlib import parse_model_rows
 
-          configs = sorted(Path("config/machines").glob("*.models.tsv"))
-          if not configs:
-              raise SystemExit("No machine configurations found.")
-          for config in configs:
-              rows = parse_model_rows(config, enabled_only=False)
-              if not rows:
-                  raise SystemExit(f"Machine configuration has no model rows: {config}")
-              for row in parse_model_rows(config):
-                  if row["backend"] in {"diffusers", "transformers-musicgen"} and row["revision"] != "main":
-                      raise SystemExit(f"Enabled generation model must use revision=main: {config} ({row['model']})")
+          config = Path("config/models.toml")
+          rows = parse_model_rows(config, enabled_only=False)
+          if not rows:
+              raise SystemExit(f"Global model catalog has no model rows: {config}")
+          for row in parse_model_rows(config):
+              if row["backend"] in {"diffusers", "transformers-musicgen"} and row["revision"] != "main":
+                  raise SystemExit(f"Enabled generation model must use revision=main: {config} ({row['model']})")
           PY
 
       - name: Smoke test command help

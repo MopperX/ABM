@@ -29,7 +29,7 @@ The external layer is opt-in because it installs/starts a container runtime and 
 
 The Image Generation module loads third-party Hugging Face model repositories with PyTorch/Diffusers. Only enable image models from repositories you trust. Some older Diffusers repositories can contain legacy PyTorch `.bin`/pickle weights rather than safetensors. The public Git config is intentionally human-reviewable and benchmark code never auto-enables newly discovered models.
 
-All enabled image models are downloaded during attached preflight; the headless generation phase uses the cached model snapshot. Gated repositories require the user to accept the upstream license manually before enabling them.
+All enabled image models are downloaded during attached preflight; the headless generation phase uses the cached model snapshot. Enabled catalog models must not require an account, token, or upstream license acceptance.
 
 ## Speech/audio data
 
