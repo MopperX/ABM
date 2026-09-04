@@ -1,0 +1,266 @@
+Wrote machine scan: /root/.local/state/ai-benchmark/scans/ai-worker-deskmini/latest.json
+Preflight: checking dependencies, Ollama, and models...
+
+==> Core externe benchmarkdependencies controleren
+Ignoring colorama: markers 'sys_platform == "win32"' don't match your environment
+Ignoring tzdata: markers 'sys_platform == "emscripten" or sys_platform == "win32"' don't match your environment
+Collecting absl-py==2.5.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 3))
+  Using cached absl_py-2.5.0-py3-none-any.whl (137 kB)
+Collecting aiohappyeyeballs==2.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 7))
+  Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+Collecting aiohttp==3.14.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 11))
+  Using cached aiohttp-3.14.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+Collecting aiosignal==1.4.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 132))
+  Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting anyio==4.14.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 136))
+  Using cached anyio-4.14.2-py3-none-any.whl (125 kB)
+Collecting attrs==26.1.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 140))
+  Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting certifi==2026.7.22 (from -r /root/ABM/benchmarks/core/requirements.lock (line 144))
+  Using cached certifi-2026.7.22-py3-none-any.whl (136 kB)
+Collecting charset-normalizer==3.5.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 151))
+  Using cached charset_normalizer-3.5.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (251 kB)
+Collecting click==8.5.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 325))
+  Using cached click-8.5.0-py3-none-any.whl (125 kB)
+Collecting cloudpickle==3.1.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 331))
+  Using cached cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Collecting datasets==4.8.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 339))
+  Using cached datasets-4.8.5-py3-none-any.whl (528 kB)
+Collecting defusedxml==0.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 343))
+  Using cached defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Collecting dill==0.4.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 347))
+  Using cached dill-0.4.1-py3-none-any.whl (120 kB)
+Collecting filelock==3.32.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 353))
+  Using cached filelock-3.32.5-py3-none-any.whl (100 kB)
+Collecting frozenlist==1.8.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 359))
+  Using cached frozenlist-1.8.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+Collecting fsspec==2026.2.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 493))
+  Using cached fsspec-2026.2.0-py3-none-any.whl (202 kB)
+Collecting h11==0.16.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 499))
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting hf-xet==1.6.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 503))
+  Using cached hf_xet-1.6.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.5 MB)
+Collecting httpcore==1.0.9 (from -r /root/ABM/benchmarks/core/requirements.lock (line 522))
+  Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting httpx==0.28.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 526))
+  Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting huggingface-hub==1.29.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 532))
+  Using cached huggingface_hub-1.29.0-py3-none-any.whl (795 kB)
+Collecting idna==3.19 (from -r /root/ABM/benchmarks/core/requirements.lock (line 536))
+  Using cached idna-3.19-py3-none-any.whl (68 kB)
+Collecting immutabledict==4.3.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 544))
+  Using cached immutabledict-4.3.1-py3-none-any.whl (5.0 kB)
+Collecting joblib==1.6.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 548))
+  Using cached joblib-1.6.0-py3-none-any.whl (306 kB)
+Collecting langdetect==1.0.9 (from -r /root/ABM/benchmarks/core/requirements.lock (line 552))
+  Using cached langdetect-1.0.9-py3-none-any.whl
+Collecting multidict==6.7.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 556))
+  Using cached multidict-6.7.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (248 kB)
+Collecting multiprocess==0.70.19 (from -r /root/ABM/benchmarks/core/requirements.lock (line 706))
+  Using cached multiprocess-0.70.19-py314-none-any.whl (160 kB)
+Collecting nltk==3.10.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 724))
+  Using cached nltk-3.10.3-py3-none-any.whl (1.8 MB)
+Collecting numpy==2.5.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 728))
+  Using cached numpy-2.5.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+Collecting packaging==26.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 798))
+  Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Collecting pandas==3.0.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 804))
+  Using cached pandas-3.0.5-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.0 MB)
+Collecting propcache==0.5.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 848))
+  Using cached propcache-0.5.2-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (61 kB)
+Collecting pyarrow==25.0.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 973))
+  Using cached pyarrow-25.0.1-cp314-cp314-manylinux_2_28_x86_64.whl (50.1 MB)
+Collecting python-dateutil==2.9.0.post0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1018))
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting pyyaml==6.0.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1022))
+  Using cached pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (794 kB)
+Collecting regex==2026.9.3 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1099))
+  Using cached regex-2026.9.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+Collecting requests==2.34.2 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1231))
+  Using cached requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting six==1.17.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1235))
+  Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting tqdm==4.70.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1241))
+  Using cached tqdm-4.70.0-py3-none-any.whl (80 kB)
+Collecting typing-extensions==4.16.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1248))
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting urllib3==2.7.0 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1256))
+  Using cached urllib3-2.7.0-py3-none-any.whl (131 kB)
+Collecting xxhash==4.0.1 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1260))
+  Using cached xxhash-4.0.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (268 kB)
+Collecting yarl==1.24.5 (from -r /root/ABM/benchmarks/core/requirements.lock (line 1476))
+  Using cached yarl-1.24.5-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (110 kB)
+Installing collected packages: xxhash, urllib3, typing-extensions, tqdm, six, regex, pyyaml, pyarrow, propcache, packaging, numpy, multidict, immutabledict, idna, hf-xet, h11, fsspec, frozenlist, filelock, dill, defusedxml, cloudpickle, click, charset-normalizer, certifi, attrs, aiohappyeyeballs, absl-py, yarl, requests, python-dateutil, multiprocess, langdetect, joblib, httpcore, anyio, aiosignal, pandas, nltk, httpx, aiohttp, huggingface-hub, datasets
+Successfully installed absl-py-2.5.0 aiohappyeyeballs-2.7.1 aiohttp-3.14.3 aiosignal-1.4.0 anyio-4.14.2 attrs-26.1.0 certifi-2026.7.22 charset-normalizer-3.5.1 click-8.5.0 cloudpickle-3.1.2 datasets-4.8.5 defusedxml-0.7.1 dill-0.4.1 filelock-3.32.5 frozenlist-1.8.0 fsspec-2026.2.0 h11-0.16.0 hf-xet-1.6.0 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.29.0 idna-3.19 immutabledict-4.3.1 joblib-1.6.0 langdetect-1.0.9 multidict-6.7.1 multiprocess-0.70.19 nltk-3.10.3 numpy-2.5.2 packaging-26.3 pandas-3.0.5 propcache-0.5.2 pyarrow-25.0.1 python-dateutil-2.9.0.post0 pyyaml-6.0.3 regex-2026.9.3 requests-2.34.2 six-1.17.0 tqdm-4.70.0 typing-extensions-4.16.0 urllib3-2.7.0 xxhash-4.0.1 yarl-1.24.5
+
+==> Preparing NLTK data for IFEval
+
+==> Preparing IFEval reference implementation
+
+==> Preparing TruthfulQA binary dataset
+
+==> Preparing MMLU-Pro dataset (pinned revision)
+{
+  "ifeval": {
+    "source": "google-research/google-research",
+    "revision": "641dd8404c65862627fa38865775694ee8b5c572",
+    "sha256": "67ffeee0fcb87c317c5b08a2de85557b4a7e96ada6178aa645b4954fe4b53d49"
+  },
+  "truthfulqa": {
+    "source": "sylinrl/TruthfulQA",
+    "revision": "d71c110897f5d31c5d7f309e7bc316c152f6f031",
+    "sha256": "b8d8ef1e12f98b4f2a9f47abc9765da0640b182b6c5d9b92f0c1a1f2f1e02e5c"
+  },
+  "mmlu_pro": {
+    "source": "TIGER-Lab/MMLU-Pro",
+    "revision": "24ac2da5bb7c7b42ea1a984c6b535e35a73d30b3",
+    "sha256": "21420424edfbbbc2b7f8e04d4e2ee7bbfb8a2690628ae8ad6b1b89f5053a70e3"
+  }
+}
+Installing RAG dependency: pypdf
+Collecting pypdf<7,>=5
+  Using cached pypdf-6.16.2-py3-none-any.whl.metadata (7.5 kB)
+Using cached pypdf-6.16.2-py3-none-any.whl (385 kB)
+Installing collected packages: pypdf
+Successfully installed pypdf-6.16.2
+RAG embedding model available: embeddinggemma
+{
+  "profile": "quick",
+  "screenSpot": "/opt/ai/ollama/benchmark-cache/vision/screenspot/quick/manifest.json",
+  "mmmuPro": "/opt/ai/ollama/benchmark-cache/vision/mmmu-pro/quick/manifest.json",
+  "sources": {
+    "screenspot": {
+      "repo": "rootsautomation/ScreenSpot",
+      "revision": "0be08781e2e188582f6131625ae1598d443b4d5d"
+    },
+    "mmmu_pro": {
+      "repo": "MMMU/MMMU_Pro",
+      "revision": "563f3e84bb3b90893083a1f039cfa13077f2302b"
+    }
+  }
+}
+Refreshing image evaluator model: qwen3-vl:4b-instruct
+pulling manifest
+pulling 16b83be68214: 100% ▕████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏ 3.3 GB
+pulling 7339fa418c9a: 100% ▕████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏  11 KB
+pulling f6417cb1e269: 100% ▕████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏   42 B
+pulling 1b50ee65d656: 100% ▕████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏  551 B
+verifying sha256 digest
+writing manifest
+success
+Image-model cachen: stabilityai/sd-turbo@main
+Fetching 22 files: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 6520.26it/s]
+Image-model cachen: segmind/tiny-sd@main
+Fetching 18 files: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 18/18 [00:00<00:00, 6335.27it/s]
+/root/ABM/.venv/lib/python3.14/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+WARNING: HPS v2.1 could not be preloaded; generation remains available.
+Image preflight complete: 2 image model(s), GenEval2 + HPS manifests cached.
++ git -C /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src fetch --quiet --tags origin
++ git -C /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src checkout --quiet v1.8.7
++ cmake -S /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src -B /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src/build -DCMAKE_BUILD_TYPE=Release
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86_64
+-- GGML_SYSTEM_ARCH: x86
+-- Including CPU backend
+-- x86 detected
+-- Adding CPU backend variant ggml-cpu: -march=native
+-- ggml version: 0.15.1
+-- ggml commit:  48f628a8
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src/build
++ cmake --build /opt/ai/ollama/benchmark-cache/speech/whisper.cpp/src/build --config Release -j 12
+[  7%] Built target bench
+[  7%] Built target main
+[ 25%] Built target ggml-base
+[ 52%] Built target ggml-cpu
+[ 58%] Built target ggml
+[ 61%] Built target whisper
+[ 65%] Built target whisper-bench
+[ 74%] Built target common
+[ 81%] Built target test-common-utf8
+[ 81%] Built target test-vad
+[ 85%] Built target test-vad-full
+[ 89%] Built target whisper-server
+[ 92%] Built target whisper-cli
+[ 96%] Built target whisper-quantize
+[100%] Built target whisper-vad-speech-segments
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0001-source-91.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmp1yvmrznl/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/practical/audio/S3-technical.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmpc5kq9epn/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/practical/audio/S4-turn-1.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmpban5cpnj/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/practical/audio/S4-turn-2.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmpu3_w4mrq/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/practical/audio/S4-turn-3.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmpynbqxu_3/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/practical/audio/S4-turn-4.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmpk7zgd6nd/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0000-source-0.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmp3xkb558j/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0001-source-91.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmptnz_1wnv/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0002-source-182.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmp_jywahwu/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0003-source-272.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmptqtxkp9h/x.wav
++ ffmpeg -hide_banner -loglevel error -y -i /opt/ai/ollama/benchmark-cache/speech/fleurs/quick/audio/0004-source-363.wav -ac 1 -ar 16000 -c:a pcm_f32le /tmp/tmp_p0d4dhk/x.wav
+Speech preflight gereed: 3 STT-model(len), 2 TTS-model(len), FLEURS 5 samples.
+Music-model cachen: facebook/musicgen-medium@main
+config.json: 7.87kB [00:00, 13.8MB/s]                                                                                                                                                                                                                                  | 0/7 [00:00<?, ?it/s]
+tokenizer_config.json: 2.37kB [00:00, 7.97MB/s]
+generation_config.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 224/224 [00:00<00:00, 3.11MB/s]
+preprocessor_config.json: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 275/275 [00:00<00:00, 4.21MB/s]
+special_tokens_map.json: 2.20kB [00:00, 18.0MB/s]                                                                                                                                                                                                                  | 0.00/275 [00:00<?, ?B/s]
+tokenizer.json: 2.42MB [00:00, 50.0MB/s]B/s]
+spiece.model: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 792k/792k [00:00<00:00, 1.12MB/s]
+Fetching 7 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7/7 [00:00<00:00,  7.41it/s]
+Music-model cachen: facebook/musicgen-melody@main
+generation_config.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 224/224 [00:00<00:00, 4.10MB/s]
+config.json: 7.78kB [00:00, 45.3MB/s]                                                                                                                                                                                                                              | 0.00/224 [00:00<?, ?B/s]
+preprocessor_config.json: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 369/369 [00:00<00:00, 7.90MB/s]
+model.safetensors.index.json: 68.5kB [00:00, 203MB/s]                                                                                                                                                                                                              | 0.00/369 [00:00<?, ?B/s]
+special_tokens_map.json: 2.20kB [00:00, 12.5MB/s]
+tokenizer_config.json: 20.8kB [00:00, 131MB/s]
+tokenizer.json: 2.42MB [00:00, 44.3MB/s]                                                                                                                                                                                                                         | 0.00/1.26G [00:00<?, ?B/s]
+spiece.model: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 792k/792k [00:00<00:00, 1.54MB/s]
+model-00002-of-00002.safetensors: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1.26G/1.26G [02:26<00:00, 8.61MB/s]
+model-00001-of-00002.safetensors: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4.97G/4.97G [04:53<00:00, 16.9MB/s]
+Fetching 10 files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 10/10 [04:54<00:00, 29.41s/it]
+Music-model cachen: facebook/musicgen-small@main
+config.json: 7.87kB [00:00, 52.4MB/s]                                                                                                                                                                                                                                  | 0/8 [00:00<?, ?it/s]
+generation_config.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 224/224 [00:00<00:00, 3.32MB/s]
+special_tokens_map.json: 2.20kB [00:00, 27.0MB/s]
+tokenizer_config.json: 2.37kB [00:00, 16.3MB/s]                                                                                                                                                                                                                    | 0.00/224 [00:00<?, ?B/s]
+preprocessor_config.json: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 275/275 [00:00<00:00, 4.67MB/s]
+tokenizer.json: 2.42MB [00:00, 53.3MB/s]s]
+spiece.model: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 792k/792k [00:38<00:00, 20.4kB/s]
+model.safetensors: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2.36G/2.36G [01:51<00:00, 21.3MB/s]
+Fetching 8 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [01:51<00:00, 13.91s/it]
+CLAP evaluator cachen: laion/clap-htsat-fused@365dea6ef167def6676140ed93bbc43f84dabb28
+config.json: 5.42kB [00:00, 8.06MB/s]                                                                                                                                                                                                                                  | 0/8 [00:00<?, ?it/s]
+special_tokens_map.json: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 280/280 [00:00<00:00, 4.27MB/s]
+tokenizer_config.json: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 384/384 [00:00<00:00, 4.87MB/s]
+preprocessor_config.json: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 537/537 [00:00<00:00, 6.19MB/s]
+merges.txt: 456kB [00:00, 17.0MB/s]                                                                                                                                                                                                                                | 0.00/384 [00:00<?, ?B/s]
+vocab.json: 798kB [00:00, 20.0MB/s]
+tokenizer.json: 2.11MB [00:00, 31.7MB/s]
+model.safetensors: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 614M/614M [00:41<00:00, 14.7MB/s]
+Fetching 8 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:42<00:00,  5.26s/it]
+MusicBench_test_B.json: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 591k/591k [00:00<00:00, 828kB/s]
+Traceback (most recent call last):
+  File "/root/ABM/scripts/music_prepare.py", line 222, in <module>
+    main()
+    ~~~~^^
+  File "/root/ABM/scripts/music_prepare.py", line 205, in main
+    mb = prepare_musicbench(a.profile, cache)
+  File "/root/ABM/scripts/music_prepare.py", line 126, in prepare_musicbench
+    rows = _normalise_musicbench_rows(json.loads(Path(f).read_text(encoding="utf-8")))
+                                      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/json/decoder.py", line 348, in decode
+    raise JSONDecodeError("Extra data", s, end)
+json.decoder.JSONDecodeError: Extra data: line 2 column 1 (char 2191)
