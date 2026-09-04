@@ -10,7 +10,7 @@ web = false
 notes = "Large open coding comparison model"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 19
 allow_cpu_ram = true
 
 [[models]]
@@ -62,7 +62,7 @@ web = false
 notes = "Large open multimodal vision comparison"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 22
 allow_cpu_ram = true
 
 [[models]]
@@ -101,7 +101,7 @@ web = false
 notes = "Too heavy by default"
 minimum_ram_gib = 28
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 19
 allow_cpu_ram = true
 
 [[models]]
@@ -142,7 +142,7 @@ web = true
 notes = "Enable when desired"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 18
 allow_cpu_ram = true
 
 [[models]]
@@ -155,7 +155,7 @@ web = true
 notes = "Small comparison model"
 minimum_ram_gib = 6
 minimum_vram_gib = 2
-minimum_free_disk_gib = 4
+minimum_free_disk_gib = 5
 allow_cpu_ram = true
 
 [[models]]
@@ -168,7 +168,7 @@ web = false
 notes = "May be slow"
 minimum_ram_gib = 10
 minimum_vram_gib = 3
-minimum_free_disk_gib = 8
+minimum_free_disk_gib = 7
 allow_cpu_ram = true
 
 [[models]]
@@ -199,7 +199,7 @@ web = true
 notes = "MoE comparison"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 19
 allow_cpu_ram = true
 
 [[models]]
@@ -212,7 +212,7 @@ web = false
 notes = "Current multimodal general model; enable when suitable"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 18
 allow_cpu_ram = true
 
 [[models]]
@@ -225,7 +225,7 @@ web = false
 notes = "Official thinking Vision baseline; 3.3 GB"
 minimum_ram_gib = 6
 minimum_vram_gib = 2
-minimum_free_disk_gib = 4
+minimum_free_disk_gib = 6
 allow_cpu_ram = true
 
 [[models]]
@@ -238,7 +238,7 @@ web = false
 notes = "Larger model"
 minimum_ram_gib = 36
 minimum_vram_gib = 14
-minimum_free_disk_gib = 32
+minimum_free_disk_gib = 24
 allow_cpu_ram = true
 
 [[models]]
@@ -251,7 +251,7 @@ web = false
 notes = "Enable only when desired"
 minimum_ram_gib = 16
 minimum_vram_gib = 6
-minimum_free_disk_gib = 14
+minimum_free_disk_gib = 11
 allow_cpu_ram = true
 
 [[models]]
@@ -264,7 +264,7 @@ web = false
 notes = "Coder comparison"
 minimum_ram_gib = 10
 minimum_vram_gib = 3
-minimum_free_disk_gib = 8
+minimum_free_disk_gib = 7
 allow_cpu_ram = true
 
 [[models]]
@@ -309,7 +309,7 @@ web = false
 notes = "Too heavy by default"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 51
+minimum_free_disk_gib = 50
 allow_cpu_ram = true
 
 [[models]]
@@ -322,7 +322,7 @@ web = false
 notes = "Too heavy by default"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 20
 allow_cpu_ram = true
 
 [[models]]
@@ -335,7 +335,7 @@ web = false
 notes = "Official no-thinking Vision baseline; 3.3 GB"
 minimum_ram_gib = 6
 minimum_vram_gib = 2
-minimum_free_disk_gib = 4
+minimum_free_disk_gib = 6
 allow_cpu_ram = true
 
 [[models]]
@@ -364,7 +364,7 @@ web = false
 notes = "Enable only when desired"
 minimum_ram_gib = 16
 minimum_vram_gib = 6
-minimum_free_disk_gib = 14
+minimum_free_disk_gib = 11
 allow_cpu_ram = true
 
 [[models]]
@@ -443,7 +443,7 @@ web = false
 notes = "Enable if practical"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 21
 allow_cpu_ram = true
 
 [[models]]
@@ -471,7 +471,7 @@ web = false
 notes = "Large comparison model"
 minimum_ram_gib = 48
 minimum_vram_gib = 18
-minimum_free_disk_gib = 32
+minimum_free_disk_gib = 34
 allow_cpu_ram = true
 
 [[models]]
