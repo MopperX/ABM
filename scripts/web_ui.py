@@ -6,7 +6,9 @@ import argparse
 import json
 import os
 import re
+import socket
 import subprocess
+import sys
 import threading
 import tomllib
 from datetime import datetime, timezone
@@ -28,6 +30,22 @@ def results_root() -> Path:
 
 def load_catalog() -> list[dict[str, Any]]:
     return tomllib.loads((ROOT / "config/models.toml").read_text(encoding="utf-8")).get("models", [])
+
+
+def latest_scan() -> dict[str, Any]:
+    root = results_root()
+    scans = sorted((root / "scans").glob("*/latest.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if scans:
+        return json_file(scans[0], {})
+    machine = socket.gethostname().split(".", 1)[0]
+    output_dir = root / "scans" / machine
+    output_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/scan_machine.py"), "--models", str(ROOT / "config/models.toml"),
+         "--output", str(output_dir / "latest.json"), "--eligible-config", str(output_dir / "eligible.models.tsv")],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, timeout=30,
+    )
+    return json_file(output_dir / "latest.json", {})
 
 
 def toml_value(value: Any) -> str:
@@ -114,8 +132,11 @@ class App(BaseHTTPRequestHandler):
         if self.path == "/":
             encoded = PAGE.encode("utf-8"); self.send_response(200); self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(encoded))); self.end_headers(); self.wfile.write(encoded); return
         if self.path == "/api/overview":
-            scans = sorted((results_root() / "scans").glob("*/latest.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-            self.send_json({"catalog": load_catalog(), "suites": SUITES, "scan": json_file(scans[0], {}) if scans else {}}); return
+            try:
+                scan = latest_scan()
+            except (OSError, subprocess.SubprocessError) as exc:
+                self.send_json({"error": f"Machine scan failed: {exc}"}, 500); return
+            self.send_json({"catalog": load_catalog(), "suites": SUITES, "scan": scan}); return
         if self.path == "/api/runs": self.send_json([run_summary(p) for p in run_directories()[:30]]); return
         if self.path.startswith("/api/log/"):
             identifier = Path(self.path.removeprefix("/api/log/")).name
