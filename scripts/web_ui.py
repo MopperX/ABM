@@ -113,6 +113,15 @@ def precheck_path(identifier: str) -> Path:
     return results_root() / "ui-prechecks" / f"{identifier}.json"
 
 
+def reconcile_precheck(record: dict[str, Any]) -> dict[str, Any]:
+    if record.get("status") in {"running", "stopping"} and record.get("pid"):
+        try:
+            os.kill(int(record["pid"]), 0)
+        except ProcessLookupError:
+            record.update({"status": "cancelled", "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    return record
+
+
 def finish_precheck(record_path: Path, command: list[str], env: dict[str, str]) -> None:
     record = json_file(record_path, {})
     with Path(record["log"]).open("ab") as output:
@@ -220,6 +229,8 @@ class App(BaseHTTPRequestHandler):
             identifier = Path(self.path.removeprefix("/api/precheck/")).name
             record = json_file(precheck_path(identifier), None)
             if record:
+                record = reconcile_precheck(record)
+                write_json(precheck_path(identifier), record)
                 record["output"] = tail(Path(record["log"]))
             self.send_json(record if record else {"error": "Precheck not found"}, 200 if record else 404); return
         if self.path.startswith("/api/log/"):
@@ -257,6 +268,8 @@ class App(BaseHTTPRequestHandler):
             if self.path == "/api/precheck-status":
                 record = json_file(precheck_path(identifier), {"status": "missing"})
                 if record.get("log"):
+                    record = reconcile_precheck(record)
+                    write_json(precheck_path(identifier), record)
                     record["output"] = tail(Path(record["log"]))
                 self.send_json(record); return
             if self.path == "/api/precheck":
@@ -266,6 +279,8 @@ class App(BaseHTTPRequestHandler):
                     self.send_json(existing, HTTPStatus.ACCEPTED); return
                 config = selected_catalog(models)
                 log = results_root() / "ui-prechecks" / f"{identifier}.log"
+                log.parent.mkdir(parents=True, exist_ok=True)
+                log.write_bytes(b"")
                 record = {"id": identifier, "status": "running", "models": sorted(models), "suites": suites, "profile": profile, "config": str(config), "log": str(log), "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
                 write_json(record_path, record)
                 env = {**os.environ, "BENCH_MODELS_CONFIG": str(config)}
