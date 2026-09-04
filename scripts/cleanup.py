@@ -44,34 +44,15 @@ def selected_models(run_dir: Path, state: dict[str, Any]) -> list[dict[str, str]
         ]
 
 
-def cached_model_assets(cache_dir: str | None, models: list[dict[str, str]]) -> list[tuple[str, Path]]:
-    """Return independently removable, model-specific cache paths only."""
+def removable_cache_dir(run_dir: Path, cache_dir: str | None) -> Path | None:
+    """Accept only the standard cache location or the legacy results-root cache."""
     if not cache_dir:
-        return []
-    cache = Path(cache_dir).expanduser()
-    assets: list[tuple[str, Path]] = []
-    for model in models:
-        backend = (model.get("backend") or "").lower()
-        name = model.get("model") or ""
-        if backend == "diffusers":
-            path = cache / "image" / "hf-models" / f"models--{name.replace('/', '--')}"
-            if path.exists(): assets.append((f"image model {name}", path))
-        elif backend == "transformers-musicgen":
-            path = cache / "music" / "hf-models" / f"models--{name.replace('/', '--')}"
-            if path.exists(): assets.append((f"music model {name}", path))
-    whisper_models = cache / "speech" / "whisper.cpp" / "src" / "models"
-    for model in models:
-        if (model.get("backend") or "").lower() == "whispercpp":
-            name = model.get("model") or ""
-            path = whisper_models / f"ggml-{name}.bin"
-            if path.exists(): assets.append((f"speech model {name}", path))
-    tts_models = cache / "speech" / "tts-models"
-    for model in models:
-        if (model.get("backend") or "").lower() == "sherpa-onnx-tts":
-            name = model.get("model") or ""
-            path = tts_models / name
-            if path.exists(): assets.append((f"speech model {name}", path))
-    return assets
+        return None
+    cache = Path(cache_dir).expanduser().resolve()
+    legacy_cache = (run_dir.parents[1] / "cache").resolve()
+    if cache.name == "benchmark-cache" or cache == legacy_cache:
+        return cache
+    return None
 
 
 def main() -> int:
@@ -117,33 +98,17 @@ def main() -> int:
                     break
                 print("Please answer y or n.")
         policy = {"remove_ollama_models": True, "keep_ollama_models": sorted(keep)}
+        # Interactive cleanup is the single post-run cleanup action: after choosing
+        # Ollama models to retain, discard all reusable benchmark downloads too.
+        policy["remove_cache"] = True
         report["requested"] = True
-
-        # Other backends do not use Ollama. Ask about each removable model cache
-        # separately, but do not touch shared tools, datasets, or run evidence.
-        for label, path in cached_model_assets((state.get("cleanup") or {}).get("cache_dir"), run_models):
-            while True:
-                answer = input(f"Keep {label}? [Y/n] ").strip().lower()
-                if answer in {"", "y", "yes"}:
-                    break
-                if answer in {"n", "no"}:
-                    try:
-                        if path.is_dir():
-                            shutil.rmtree(path)
-                        else:
-                            path.unlink()
-                        report.setdefault("cached_models_removed", []).append({"model": label, "path": str(path)})
-                    except OSError as exc:
-                        report["errors"].append(f"Could not remove {label}: {exc}")
-                    break
-                print("Please answer y or n.")
 
     if policy.get("remove_cache"):
         cache_dir = policy.get("cache_dir")
         if cache_dir:
-            cache = Path(cache_dir).expanduser().resolve()
-            if cache.name != "benchmark-cache":
-                report["errors"].append(f"Refusing to remove unexpected cache directory: {cache}")
+            cache = removable_cache_dir(run_dir, cache_dir)
+            if cache is None:
+                report["errors"].append(f"Refusing to remove unexpected cache directory: {Path(cache_dir).expanduser().resolve()}")
             elif cache.exists():
                 try:
                     shutil.rmtree(cache)

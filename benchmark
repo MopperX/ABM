@@ -294,7 +294,7 @@ state={
  "schema_version":1,"run_id":rid,"machine":machine,"profile":profile,"selected_benchmarks":selected,"with_livecodebench":with_lcb,
  "status":"starting","created_at":datetime.now(timezone.utc).isoformat(timespec='seconds'),"started_at":None,
  "pid":None,"completed_jobs":{},"progress":{"completed":0,"total":0,"percent":0,"current":None},"benchmarks":{},
- "cleanup":{"on_success":cleanup_on_success,"remove_cache":false,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
+ "cleanup":{"on_success":cleanup_on_success,"remove_cache":cleanup_on_success,"remove_ollama_models":cleanup_on_success,"keep_ollama_models":keep_models,"cache_dir":cache_dir}
 }
 (run/'state.json').write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 (run/'run.json').write_text(json.dumps({k:state[k] for k in ['schema_version','run_id','machine','profile','selected_benchmarks','with_livecodebench','cleanup','created_at']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
