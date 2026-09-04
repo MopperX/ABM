@@ -36,6 +36,19 @@ def available_vram_gib() -> float | None:
         return None
 
 
+def total_vram_gib() -> float | None:
+    if not shutil.which("nvidia-smi"):
+        return None
+    try:
+        output = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            text=True, stderr=subprocess.DEVNULL, timeout=3,
+        )
+        return sum(float(line.strip()) for line in output.splitlines() if line.strip()) / 1024
+    except Exception:
+        return None
+
+
 def available_ram_gib(snapshot: dict) -> float | None:
     value = (snapshot.get("readiness") or {}).get("memory_available_bytes")
     if value is None:
@@ -98,6 +111,12 @@ def main() -> int:
     snapshot = host_snapshot()
     ram_gib = available_ram_gib(snapshot)
     vram_gib = available_vram_gib()
+    total_vram = total_vram_gib()
+    total_ram = float(snapshot["memory"]) / GIB if snapshot.get("memory") is not None else None
+    readiness = snapshot.get("readiness") or {}
+    cpu_count = readiness.get("cpu_count")
+    load_average = readiness.get("load_average") or []
+    cpu_load_percent = (float(load_average[0]) / float(cpu_count) * 100) if cpu_count and load_average else None
     results_dir = Path(args.output).resolve().parent
     results_storage = storage_usage(results_dir)
     root_storage = storage_usage(Path("/"))
@@ -139,6 +158,11 @@ def main() -> int:
         "models_config": str(models_path),
         "available_ram_gib": round(ram_gib, 2) if ram_gib is not None else None,
         "available_vram_gib": round(vram_gib, 2) if vram_gib is not None else None,
+        "total_ram_gib": round(total_ram, 2) if total_ram is not None else None,
+        "total_vram_gib": round(total_vram, 2) if total_vram is not None else None,
+        "cpu": snapshot.get("cpu"),
+        "cpu_count": cpu_count,
+        "cpu_load_percent": round(cpu_load_percent, 1) if cpu_load_percent is not None else None,
         "results_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in results_storage.items()},
         "root_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in root_storage.items()},
         "ollama_models_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in ollama_storage.items()},
