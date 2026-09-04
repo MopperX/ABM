@@ -110,7 +110,7 @@ body{max-width:1100px;margin:32px auto;padding:0 18px;background:#101827;color:#
 let catalog=[],scan={}; const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function get(url){let r=await fetch(url);if(!r.ok)throw Error(await r.text());return r.json()}
 function choices(){return [...document.querySelectorAll('input[name="model"]:checked')].map(x=>x.value)}
-async function load(){let d=await get('/api/overview');catalog=d.catalog;scan=d.scan||{};document.querySelector('#machine').textContent=`RAM available: ${scan.available_ram_gib??'?'} GiB · VRAM available: ${scan.available_vram_gib??'?'} GiB · model storage free: ${scan.ollama_models_storage?.free_gib??'?'} GiB`;
+async function load(){let d=await get('/api/overview');catalog=d.catalog;scan=d.scan||{};let store=scan.ollama_models_storage||{},root=scan.root_storage||{};document.querySelector('#machine').textContent=`RAM available: ${scan.available_ram_gib??'?'} GiB · VRAM free: ${scan.available_vram_gib??'?'} GiB · Root disk (${root.path??'/'}): ${root.free_gib??'?'} GiB free / ${root.total_gib??'?'} GiB total (${root.used_gib??'?'} GiB used) · Ollama storage (${store.path??'?'}): ${store.free_gib??'?'} GiB free / ${store.total_gib??'?'} GiB total (${store.used_gib??'?'} GiB used)`;
 document.querySelector('#suites').innerHTML=d.suites.map((s,i)=>`<label><input type="checkbox" name="suite" value="${s}" ${i===0?'checked':''}> ${s}</label>`).join('');
 let eligible=new Map((scan.models||[]).filter(x=>x.allowed).map(x=>[x.model,x]));document.querySelector('#models').innerHTML=catalog.filter(m=>eligible.has(m.model)).map(m=>{let r=eligible.get(m.model);return `<label><input type="checkbox" name="model" value="${esc(m.model)}"> <b>${esc(m.model)}</b> <span class="muted">(${r.eligibility}; min. ${r.requirements.ram_gib} GiB RAM, ${r.requirements.vram_gib} GiB VRAM, ${r.requirements.free_disk_gib} GiB disk)</span></label>`}).join('')||'No eligible models. Run a machine scan first.'; await runs()}
 async function runs(){let d=await get('/api/runs');document.querySelector('#runs').innerHTML=d.length?d.map(r=>{let p=r.state.progress||{};return `<p><button onclick="showLog('${r.id}')">Log</button> <b>${esc(r.id)}</b> — ${esc(r.state.status||'unknown')} — ${p.completed||0}/${p.total||0} (${p.percent||0}%)</p>`}).join(''):'No runs yet.'}
@@ -172,7 +172,12 @@ def main() -> None:
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.host, args.port), App)
     print(f"AI Benchmark web UI: http://{args.host}:{args.port}", flush=True)
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nAI Benchmark web UI stopped.", flush=True)
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":

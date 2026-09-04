@@ -93,6 +93,7 @@ def main() -> int:
     vram_gib = available_vram_gib()
     results_dir = Path(args.output).resolve().parent
     results_storage = storage_usage(results_dir)
+    root_storage = storage_usage(Path("/"))
     ollama_dir = ollama_models_dir(args.ollama_models_dir)
     ollama_storage = storage_usage(ollama_dir)
 
@@ -132,6 +133,7 @@ def main() -> int:
         "available_ram_gib": round(ram_gib, 2) if ram_gib is not None else None,
         "available_vram_gib": round(vram_gib, 2) if vram_gib is not None else None,
         "results_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in results_storage.items()},
+        "root_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in root_storage.items()},
         "ollama_models_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in ollama_storage.items()},
         "models": findings,
     }
