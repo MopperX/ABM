@@ -7,6 +7,8 @@ SELECTED="${1:-core}"
 MACHINE_CONFIG="${2:?machine config required}"
 WITH_LIVECODEBENCH="${3:-0}"
 BENCH_PROFILE="${4:-standard}"
+progress() { printf '@@PRECHECK|%s|%s|%s\n' "$1" "$2" "$3"; }
+progress "environment" "System checks" "running"
 export BENCH_PROFILE
 export BENCH_MACHINE_CONFIG="$MACHINE_CONFIG"
 
@@ -90,19 +92,24 @@ curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null || {
   echo "ERROR: Ollama API is unreachable." >&2
   exit 1
 }
+progress "environment" "System checks" "done"
 
 # Module dependency hooks are executed while the user is still attached, so sudo prompts cannot
 # strand a headless run. Hooks will be added as modules are implemented.
 IFS=',' read -r -a benches <<< "$SELECTED"
 for bench in "${benches[@]}"; do
+  progress "suite-$bench" "Preparing $bench" "running"
   hook="$REPO_ROOT/benchmarks/$bench/dependencies.sh"
   if [[ -x "$hook" ]]; then
     "$hook"
   fi
+  progress "suite-$bench" "Preparing $bench" "done"
 done
 
 if [[ "$WITH_LIVECODEBENCH" == "1" ]]; then
+  progress "livecodebench" "Preparing LiveCodeBench" "running"
   "$REPO_ROOT/benchmarks/coding-agent/livecodebench-dependencies.sh"
+  progress "livecodebench" "Preparing LiveCodeBench" "done"
 fi
 
 # Pull only enabled models relevant to selected benchmarks.
@@ -125,6 +132,8 @@ for r in parse_model_rows(path):
     if relevant:
         models.append(r['model'])
 for model in dict.fromkeys(models):
+  print(f'@@PRECHECK|model-{model}|Downloading {model}|running', flush=True)
   print(f'Checking for model updates: {model}', flush=True)
   subprocess.run(['ollama', 'pull', model], check=True)
+  print(f'@@PRECHECK|model-{model}|Downloading {model}|done', flush=True)
 PY
