@@ -309,7 +309,7 @@ web = false
 notes = "Too heavy by default"
 minimum_ram_gib = 32
 minimum_vram_gib = 12
-minimum_free_disk_gib = 28
+minimum_free_disk_gib = 51
 allow_cpu_ram = true
 
 [[models]]

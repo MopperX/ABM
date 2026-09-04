@@ -125,10 +125,6 @@ for r in parse_model_rows(path):
     if relevant:
         models.append(r['model'])
 for model in dict.fromkeys(models):
-  available = subprocess.run(['ollama', 'show', model], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-  if available:
-    print(f'Model available; reusing local copy: {model}', flush=True)
-  else:
-    print(f'Downloading missing model: {model}', flush=True)
-    subprocess.run(['ollama', 'pull', model], check=True)
+  print(f'Checking for model updates: {model}', flush=True)
+  subprocess.run(['ollama', 'pull', model], check=True)
 PY

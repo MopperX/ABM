@@ -111,7 +111,7 @@ PY
 }
 
 find_machine_config() {
-  local path="$ROOT/config/models.toml"
+  local path="${BENCH_MODELS_CONFIG:-$ROOT/config/models.toml}"
   [[ -f "$path" ]] || {
     echo "ERROR: global model catalog is missing: $path" >&2
     exit 1

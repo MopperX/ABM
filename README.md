@@ -88,6 +88,18 @@ The cleanup report is written to `summary/cleanup.json`. To clean an already com
 
 Enabled Image and Music model rows use the Hugging Face `main` revision and are refreshed during preflight; each run records the resolved revision. Fixed benchmark datasets and evaluator assets remain pinned so their scoring contract does not move with upstream releases.
 
+## LAN web interface
+
+For a lightweight control page on a headless benchmark machine, start:
+
+```bash
+./scripts/serve_web_ui.sh
+```
+
+It listens on port `8080` on all network interfaces by default. Open `http://<machine-hostname-or-ip>:8080` from a computer on the same network. The page uses the latest machine scan to show eligible models, creates an immutable per-run model selection, and can start selected suites. It intentionally has no authentication, so keep it on a trusted private network and do not expose the port to the internet.
+
+Use `--port` or `--host` to change the listener, for example `./scripts/serve_web_ui.sh --port 8090`.
+
 Quality, performance, efficiency, and stability remain separate dimensions. Reports do not combine unrelated metrics into a universal score. See [METHODOLOGY.md](METHODOLOGY.md), [RESULTS_SCHEMA.md](RESULTS_SCHEMA.md), and [SECURITY.md](SECURITY.md).
 
 ## Machine scan
