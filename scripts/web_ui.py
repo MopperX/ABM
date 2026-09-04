@@ -332,6 +332,16 @@ document.querySelector('#precheck').onclick=async()=>{let p=payload();if(!p.mode
 document.querySelector('#stop-precheck').onclick=async()=>{if(precheck){await fetch('/api/precheck-stop',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:precheck.id})});refreshPrecheck()}};
 document.querySelector('#start').onclick=async()=>{let p=payload();if(!precheck||precheck.status!=='passed')return;let r=await fetch('/api/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...p,precheck_id:precheck.id})}),d=await r.json();document.querySelector('#benchmark-message').textContent=r.ok?d.message:d.error;if(r.ok)setTimeout(runs,1500)};
 document.querySelector('#refresh-runs').onclick=runs;document.querySelector('#precheck-log').addEventListener('scroll',e=>{let x=e.currentTarget;followPrecheck=x.scrollTop+x.clientHeight>=x.scrollHeight-24});document.querySelector('#benchmark-log').addEventListener('scroll',e=>{let x=e.currentTarget;followBenchmark=x.scrollTop+x.clientHeight>=x.scrollHeight-24});load().catch(e=>document.querySelector('#message').textContent=e.message);setInterval(runs,10000);
+const extraStyle=document.createElement('style');extraStyle.textContent='.metrics{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin:0 0 16px}.metric{background:#101827;border:1px solid #2c3b55;border-radius:8px;padding:10px}.metric b{display:block;font-size:17px}.metric small{color:#aebbd1;font-size:11px}@media(max-width:850px){.metrics{grid-template-columns:repeat(2,1fr)}}';document.head.append(extraStyle);
+function resourceCards(){let ram=Number(scan.total_ram_gib)||0,free=Number(scan.available_ram_gib)||0,vram=Number(scan.total_vram_gib)||0,vfree=Number(scan.available_vram_gib)||0;return `<div class="metric"><span class="muted">CPU</span><b>${Number(scan.cpu_load_percent||0).toFixed(0)}%</b><small>${esc(scan.cpu||'Unknown')}</small></div><div class="metric"><span class="muted">RAM</span><b>${free.toFixed(1)} GiB vrij</b><small>${ram.toFixed(1)} GiB totaal</small></div><div class="metric"><span class="muted">GPU</span><b>${vram.toFixed(1)} GiB VRAM</b><small>${esc(scan.gpu||'Geen GPU')}</small></div><div class="metric"><span class="muted">VRAM</span><b>${vfree.toFixed(1)} GiB vrij</b><small>${vram.toFixed(1)} GiB totaal</small></div>`}
+let originalLoad=load;load=async()=>{await originalLoad();document.querySelectorAll('.resource-cards').forEach(x=>x.innerHTML=resourceCards())};document.querySelector('#precheck-page section').insertAdjacentHTML('afterbegin','<div class="metrics resource-cards"></div>');document.querySelector('#benchmark-page section').insertAdjacentHTML('afterbegin','<div class="metrics resource-cards"></div>');
+document.querySelector('.menu').insertAdjacentHTML('beforeend','<button data-page="reports-page">3. Reports</button><button data-page="cleanup-page">4. Cleanup</button>');document.body.insertAdjacentHTML('beforeend','<main id="reports-page" class="page"><section><div class="overview-title"><h2>Reports</h2><button class="secondary" onclick="runs()">Vernieuwen</button></div><div id="report-runs" class="muted">Laden…</div></section></main><main id="cleanup-page" class="page"><section><h2>Cleanup</h2><p class="muted">Selecteer uitsluitend modellen die verwijderd mogen worden.</p><div id="cleanup-models" class="suite-grid"></div><div class="actions"><button id="cleanup-selected" class="secondary">Verwijder geselecteerde modellen</button></div><p id="cleanup-message"></p></section></main>');
+document.querySelectorAll('.menu button').forEach(button=>button.onclick=()=>{document.querySelectorAll('.menu button,.page').forEach(x=>x.classList.remove('active'));button.classList.add('active');document.querySelector('#'+button.dataset.page).classList.add('active');if(button.dataset.page==='reports-page')renderReports();if(button.dataset.page==='cleanup-page')loadCleanup()});
+async function renderReports(){let data=await get('/api/runs');document.querySelector('#report-runs').innerHTML=data.length?data.map(r=>{let s=r.state,p=s.progress||{};return `<div class="run"><b>${esc(r.id)}</b> — ${esc(s.status||'unknown')}<br><span class="muted">${esc(s.machine||r.machine||'')} · ${esc(s.profile||'')} · ${(s.selected_benchmarks||[]).join(', ')} · ${p.completed||0}/${p.total||0} (${p.percent||0}%)</span></div>`}).join(''):'Geen runs gevonden.'}
+async function loadCleanup(){let d=await get('/api/cleanup-models');document.querySelector('#cleanup-models').innerHTML=d.models.length?d.models.map(m=>`<label><input type="checkbox" name="cleanup-model" value="${esc(m)}"><b>${esc(m)}</b></label>`).join(''):'Geen lokale Ollama-modellen gevonden.'}
+document.querySelector('#cleanup-selected').onclick=async()=>{let models=[...document.querySelectorAll('input[name="cleanup-model"]:checked')].map(x=>x.value);if(!models.length||!confirm(`Verwijder ${models.join(', ')}?`))return;let r=await fetch('/api/cleanup-models',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({models})}),d=await r.json();document.querySelector('#cleanup-message').textContent=r.ok?d.message:d.error;if(r.ok)loadCleanup()};
+async function forceRun(id){if(!confirm(`Forceer stoppen van ${id}?`))return;let r=await fetch('/api/stop-run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,force:true})}),d=await r.json();document.querySelector('#benchmark-message').textContent=r.ok?d.message:d.error;runs()}async function resumeRun(id){let r=await fetch('/api/resume-run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id})}),d=await r.json();document.querySelector('#benchmark-message').textContent=r.ok?d.message:d.error;runs()}const originalRuns=runs;runs=async()=>{await originalRuns();let list=document.querySelector('#runs');if(list)list.querySelectorAll('.run').forEach(row=>{let id=row.querySelector('b')?.textContent,status=row.querySelector('.muted')?.textContent||'';if(id&&/failed|cancelled|stopped/i.test(status))row.querySelector('.actions').insertAdjacentHTML('beforeend',`<button class="secondary" onclick="resumeRun('${id}')">Hervat</button>`);if(id&&/starting|running|resuming/i.test(status))row.querySelector('.actions').insertAdjacentHTML('beforeend',`<button class="secondary" onclick="forceRun('${id}')">Force stop</button>`)});};
+document.querySelector('#start').onclick=async()=>{let p=payload();if(!precheck||precheck.status!=='passed')return;p.with_livecodebench=document.querySelector('#with-livecodebench')?.checked;p.cleanup_on_success=document.querySelector('#cleanup-on-success')?.checked;let r=await fetch('/api/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...p,precheck_id:precheck.id})}),d=await r.json();document.querySelector('#benchmark-message').textContent=r.ok?d.message:d.error;if(r.ok)setTimeout(runs,1500)};document.querySelector('#benchmark-page section').insertAdjacentHTML('beforeend','<p><label><input id="with-livecodebench" type="checkbox"> LiveCodeBench gebruiken</label></p><p><label><input id="cleanup-on-success" type="checkbox"> Cleanup uitvoeren na succesvolle run</label></p>');setTimeout(()=>document.querySelectorAll('.resource-cards').forEach(x=>x.innerHTML=resourceCards()),500);
 </script></html>"""
 
 
@@ -358,7 +368,15 @@ class App(BaseHTTPRequestHandler):
             except (OSError, subprocess.SubprocessError) as exc:
                 self.send_json({"error": f"Resource refresh failed: {exc}"}, 500); return
             self.send_json({"scan": scan, "installed": installed_models(scan), "sizes": installed_model_sizes(scan)}); return
-        if self.path == "/api/runs": self.send_json([run_summary(p) for p in run_directories()[:30]]); return
+        if self.path == "/api/runs": self.send_json([run_summary(p) for p in run_directories()]); return
+        if self.path == "/api/cleanup-models":
+            models: list[str] = []
+            if shutil.which("ollama"):
+                try:
+                    models = [line.split()[0] for line in subprocess.check_output(["ollama", "list"], text=True, stderr=subprocess.DEVNULL, timeout=5).splitlines()[1:] if line.split()]
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            self.send_json({"models": models}); return
         if self.path.startswith("/api/precheck/"):
             identifier = Path(self.path.removeprefix("/api/precheck/")).name
             record = json_file(precheck_path(identifier), None)
@@ -375,7 +393,7 @@ class App(BaseHTTPRequestHandler):
         self.send_json({"error": "Not found"}, 404)
 
     def do_POST(self) -> None:
-        if self.path not in {"/api/start", "/api/precheck", "/api/precheck-status", "/api/precheck-stop", "/api/stop-run"}: self.send_json({"error": "Not found"}, 404); return
+        if self.path not in {"/api/start", "/api/precheck", "/api/precheck-status", "/api/precheck-stop", "/api/stop-run", "/api/resume-run", "/api/cleanup-models"}: self.send_json({"error": "Not found"}, 404); return
         try:
             length = int(self.headers.get("Content-Length", "0")); payload = json.loads(self.rfile.read(length))
             if self.path == "/api/stop-run":
@@ -383,8 +401,39 @@ class App(BaseHTTPRequestHandler):
                 run = next((directory for directory in run_directories() if directory.name == identifier), None)
                 if not run:
                     raise ValueError("Run not found.")
+                if payload.get("force"):
+                    pid_file = next((run / name for name in ("runner.pid", "launcher.pid") if (run / name).is_file()), None)
+                    if not pid_file:
+                        raise ValueError("No process ID is available for this run.")
+                    try:
+                        os.kill(int(pid_file.read_text(encoding="utf-8").strip()), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    self.send_json({"message": f"Force stop sent for {identifier}."}, HTTPStatus.ACCEPTED); return
                 (run / "stop.requested").touch()
                 self.send_json({"message": f"Graceful stop requested for {identifier}."}, HTTPStatus.ACCEPTED); return
+            if self.path == "/api/resume-run":
+                identifier = Path(str(payload.get("id", ""))).name
+                run = next((directory for directory in run_directories() if directory.name == identifier), None)
+                if not run:
+                    raise ValueError("Run not found.")
+                state = json_file(run / "state.json", {})
+                if state.get("status") == "completed":
+                    raise ValueError("A completed run cannot be resumed.")
+                subprocess.Popen([str(ROOT / "benchmark"), "resume", identifier], cwd=ROOT, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                self.send_json({"message": f"Resume requested for {identifier}."}, HTTPStatus.ACCEPTED); return
+            if self.path == "/api/cleanup-models":
+                models = [Path(str(model)).name for model in payload.get("models", []) if str(model).strip()]
+                if not models:
+                    raise ValueError("Select one or more models to remove.")
+                failures: list[str] = []
+                for model in models:
+                    completed = subprocess.run(["ollama", "rm", model], text=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                    if completed.returncode:
+                        failures.append(f"{model}: {completed.stderr.strip() or 'could not remove'}")
+                if failures:
+                    raise ValueError("; ".join(failures))
+                self.send_json({"message": f"Removed {len(models)} selected model(s)."}); return
             if self.path == "/api/precheck-stop":
                 identifier = Path(str(payload.get("id", ""))).name
                 record_path = precheck_path(identifier)
@@ -436,8 +485,12 @@ class App(BaseHTTPRequestHandler):
             if record.get("models") != sorted(models) or record.get("suites") != suites or record.get("profile") != profile: raise ValueError("The selection changed after the precheck. Run it again.")
             config = Path(record["config"]); log = results_root() / "ui-launch.log"; log.parent.mkdir(parents=True, exist_ok=True)
             env = {**os.environ, "BENCH_MODELS_CONFIG": str(config)}
+            command = [str(ROOT / "benchmark"), "start", *suites, "--profile", profile]
+            command.append("--with-livecodebench" if payload.get("with_livecodebench", "coding-agent" in suites) else "--without-livecodebench")
+            if payload.get("cleanup_on_success"):
+                command.append("--cleanup-on-success")
             with log.open("ab") as output:
-                subprocess.Popen([str(ROOT / "benchmark"), "start", *suites, "--profile", profile], cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
             self.send_json({"message": "Preflight started. Refresh the Runs list in a moment."}, HTTPStatus.ACCEPTED)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             self.send_json({"error": str(exc)}, 400)

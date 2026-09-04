@@ -159,6 +159,12 @@ log "Scripts uitvoerbaar maken"
 chmod +x "$ROOT/bootstrap.sh" "$ROOT/benchmark" "$ROOT/scripts/"*.sh "$ROOT/scripts/"*.py
 find "$ROOT/benchmarks" -name '*.sh' -exec chmod +x {} + 2>/dev/null || true
 
+MACHINE_NAME="$(hostname -s 2>/dev/null || hostname)"
+SCAN_DIR="$RESULTS_ROOT/scans/$MACHINE_NAME"
+mkdir -p "$SCAN_DIR"
+log "Machine scan uitvoeren"
+"$ROOT/.venv/bin/python" "$ROOT/scripts/scan_machine.py" --models "$ROOT/config/models.toml" --output "$SCAN_DIR/latest.json" --eligible-config "$SCAN_DIR/eligible.models.tsv" --report
+
 cat <<TXT
 
 Bootstrap complete.
