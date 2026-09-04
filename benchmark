@@ -213,9 +213,6 @@ start_run() {
   if ((with_lcb)) && [[ " $selected_csv " != *"coding-agent"* ]]; then
     echo "ERROR: --with-livecodebench requires coding-agent to be selected." >&2; exit 2
   fi
-  echo "Preflight: checking dependencies, Ollama, and models..."
-  "$ROOT/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
-
   local run_id run_dir now
   now="$(date -u +%Y%m%dT%H%M%SZ)"
   run_id="${now}-$(printf '%04x' $((RANDOM % 65536)))"
@@ -418,7 +415,6 @@ resume_run() {
   selected_csv="$($PY -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["selected_benchmarks"]))' "$run_dir/state.json")"
   profile="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["profile"])' "$run_dir/state.json")"
   with_lcb="$($PY -c 'import json,sys; print(1 if json.load(open(sys.argv[1])).get("with_livecodebench") else 0)' "$run_dir/state.json")"
-  echo "Resume preflight: checking dependencies, Ollama, and the original models..."
   # Use the snapshotted dependency hooks where possible. They may refer to the repository venv,
   # so expose the live venv to the snapshot without copying gigabytes into every run.
   if [[ "$run_source" != "$ROOT" && -d "$ROOT/.venv" ]]; then
@@ -429,7 +425,6 @@ resume_run() {
     [[ -L "$run_source/.venv-lcb" && ! -e "$run_source/.venv-lcb" ]] && rm -f "$run_source/.venv-lcb"
     [[ -e "$run_source/.venv-lcb" || -L "$run_source/.venv-lcb" ]] || ln -s "$ROOT/.venv-lcb" "$run_source/.venv-lcb"
   fi
-  "$run_source/scripts/preflight.sh" "$selected_csv" "$machine_config" "$with_lcb" "$profile"
   if [[ -f "$source_file" ]]; then
     local python_environment
     python_environment="$(python_environment_fingerprint)"

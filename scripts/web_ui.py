@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -48,6 +50,32 @@ def latest_scan() -> dict[str, Any]:
     return json_file(output_dir / "latest.json", {})
 
 
+def installed_models(scan: dict[str, Any]) -> dict[str, bool]:
+    """Read local model/cache state without downloading or contacting remote services."""
+    present: set[str] = set()
+    if shutil.which("ollama"):
+        try:
+            data = json.loads(subprocess.check_output(["ollama", "list", "--format", "json"], text=True, stderr=subprocess.DEVNULL, timeout=5))
+            rows = data.get("models", []) if isinstance(data, dict) else data
+            present.update(str(row["name"]) for row in rows if isinstance(row, dict) and row.get("name"))
+        except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+            pass
+    storage = (scan.get("ollama_models_storage") or {}).get("path", "~/.ollama/models")
+    cache = Path(os.environ.get("BENCH_CACHE_DIR") or Path(storage) / "benchmark-cache")
+    for manifest in [*cache.glob("image/models/*.json"), cache / "music/prepared.json"]:
+        for row in json_file(manifest, {}).get("models", []):
+            if row.get("model") and row.get("local_path") and Path(row["local_path"]).exists():
+                present.add(str(row["model"]))
+    speech = json_file(cache / "speech/prepared.json", {})
+    for model, path in (speech.get("whisper_cpp", {}).get("models", {}) or {}).items():
+        if Path(path).exists():
+            present.add(str(model))
+    for model, assets in (speech.get("tts_assets", {}) or {}).items():
+        if isinstance(assets, dict) and assets.get("onnx") and Path(assets["onnx"]).exists():
+            present.add(str(model))
+    return {str(row.get("model")): str(row.get("model")) in present or f"{row.get('model')}:latest" in present for row in load_catalog()}
+
+
 def toml_value(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -71,6 +99,23 @@ def selected_catalog(models: set[str]) -> Path:
         lines.append("")
     destination.write_text("\n".join(lines), encoding="utf-8")
     return destination
+
+
+def write_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def precheck_path(identifier: str) -> Path:
+    return results_root() / "ui-prechecks" / f"{identifier}.json"
+
+
+def finish_precheck(record_path: Path, command: list[str], env: dict[str, str]) -> None:
+    record = json_file(record_path, {})
+    with Path(record["log"]).open("ab") as output:
+        completed = subprocess.run(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT)
+    record.update({"status": "passed" if completed.returncode == 0 else "failed", "exit_code": completed.returncode, "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    write_json(record_path, record)
 
 
 def json_file(path: Path, fallback: Any) -> Any:
@@ -102,21 +147,29 @@ def tail(path: Path, size: int = 30_000) -> str:
 
 PAGE = r"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI Benchmark</title><style>
-body{max-width:1120px;margin:32px auto;padding:0 18px;background:#101827;color:#e6edf7;font:16px system-ui,sans-serif}h1{margin:0;font-size:30px}.intro,.muted{color:#aebbd1}section{background:#182235;border:1px solid #2c3b55;border-radius:12px;padding:22px;margin:18px 0}h2{margin:0 0 16px}h3{margin:24px 0 10px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px}.metric{background:#101827;border:1px solid #2c3b55;border-radius:8px;padding:12px}.metric b{display:block;font-size:18px;margin-top:3px}.suite-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.suite-grid label{background:#101827;border:1px solid #2c3b55;border-radius:7px;padding:10px;cursor:pointer}.models{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.model{background:#101827;border:1px solid #2c3b55;border-radius:7px;padding:10px}.model strong{display:block}.tag{color:#9fddb9;font-size:13px}button{background:#52c78b;border:0;border-radius:6px;padding:10px 14px;font-weight:700;cursor:pointer}button:disabled{opacity:.5}pre{background:#0b1220;padding:12px;overflow:auto;max-height:360px;white-space:pre-wrap}#message{font-weight:600}@media(max-width:700px){.metrics,.suite-grid,.models{grid-template-columns:1fr 1fr}}</style>
-<h1>AI Benchmark</h1><p class="intro">LAN control panel. Every model approved by the machine scan is included automatically.</p>
-<section><h2>Start a run</h2><div id="machine" class="metrics">Loading machine scan…</div><h3>Suites</h3><div id="suites" class="suite-grid"></div><h3>Approved models</h3><p id="model-summary" class="muted">Loading…</p><div id="models" class="models"></div><p>Profile: <select id="profile"><option value="quick">Quick</option><option value="standard" selected>Standard</option><option value="full">Full</option></select></p><button id="start">Start benchmark</button> <span id="message"></span></section>
-<section><h2>Runs</h2><div id="runs" class="muted">Loading…</div></section><section><h2>Log</h2><pre id="log">Select a run to view its log.</pre></section>
+body{margin:0;padding:26px;background:#101827;color:#e6edf7;font:16px system-ui,sans-serif}h1{margin:0;font-size:30px}.intro,.muted{color:#aebbd1}.app{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(360px,1fr);gap:20px;align-items:start}section{background:#182235;border:1px solid #2c3b55;border-radius:12px;padding:22px;margin:18px 0}.app section:first-child{margin-top:0}h2{margin:0 0 16px}h3{margin:24px 0 10px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px}.metric{background:#101827;border:1px solid #2c3b55;border-radius:8px;padding:12px}.metric b{display:block;font-size:18px;margin-top:3px}.metric small{display:block;color:#aebbd1;margin-top:5px}.space-green{color:#52c78b}.space-orange{color:#ffb454}.space-red{color:#ff6b6b}.suite-title{display:flex;align-items:center;justify-content:space-between}.suite-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.suite-grid label{background:#101827;border:1px solid #2c3b55;border-radius:7px;padding:10px;cursor:pointer}.suite-grid b{display:block}.suite-grid small{display:block;color:#aebbd1;margin-left:23px;margin-top:2px}.models{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.model{background:#101827;border:1px solid #2c3b55;border-radius:7px;padding:10px}.model-head{display:flex;justify-content:space-between;gap:8px}.model strong{display:block}.tag{color:#9fddb9;font-size:13px}.installed{color:#52c78b;font-size:12px;font-weight:700;white-space:nowrap}.missing{color:#ff6b6b;font-size:12px;font-weight:700;white-space:nowrap}button{background:#52c78b;border:0;border-radius:6px;padding:10px 14px;font-weight:700;cursor:pointer}.secondary{background:#293956;color:#e6edf7}button:disabled{opacity:.45;cursor:not-allowed}pre{background:#0b1220;padding:12px;overflow:auto;max-height:65vh;white-space:pre-wrap}#message{font-weight:600}.precheck{border-left:3px solid #ffb454;background:#101827;padding:11px;margin:14px 0}.passed{border-color:#52c78b}.failed{border-color:#ff6b6b}@media(max-width:900px){.app{grid-template-columns:1fr}.metrics,.suite-grid,.models{grid-template-columns:repeat(2,1fr)}}</style>
+<h1>AI Benchmark</h1>
+<main class="app"><section><h2>Start a run</h2><div id="machine" class="metrics">Loading machine scan…</div><div class="suite-title"><h3>Suites</h3><button id="select-all" class="secondary" type="button">Select all suites</button></div><div id="suites" class="suite-grid"></div><h3>Approved models</h3><p id="model-summary" class="muted">Loading…</p><div id="models" class="models"></div><p>Profile: <select id="profile"><option value="quick">Quick</option><option value="standard" selected>Standard</option><option value="full">Full</option></select></p><div id="precheck-report" class="precheck">Run the precheck before starting a benchmark.</div><button id="precheck">Run precheck</button> <button id="start" disabled>Start benchmark</button> <span id="message"></span></section>
+<aside><section><h2>Runs</h2><div id="runs" class="muted">Loading…</div></section><section><h2>Log</h2><pre id="log">Select a run to view its log.</pre></section></aside></main>
 <script>
-let catalog=[],scan={}; const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let catalog=[],scan={},installed={},precheck=null; const suiteLabels={core:['Algemene taalmodellen','Tekst, kennis en instructies'], 'coding-agent':['Code & agents','Programmeren en zelfstandige taken'],rag:['Documenten & RAG','Zoeken en antwoorden uit documenten'],vision:['Beeld & schermen','Afbeeldingen en schermafbeeldingen'],image:['Afbeeldingen maken','Tekst-naar-afbeelding'],speech:['Spraak & audio','Spraakherkenning en spraaksynthese'],music:['Muziek maken','Tekst- en melodie-naar-muziek'],web:['Webonderzoek','Zoeken, bronnen en citaten']}; const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 async function get(url){let r=await fetch(url);if(!r.ok)throw Error(await r.text());return r.json()}
 function selectedSuites(){return [...document.querySelectorAll('input[name="suite"]:checked')].map(x=>x.value)}
 function approvedModels(){let selected=new Set(selectedSuites()),approved=new Map((scan.models||[]).filter(x=>x.allowed).map(x=>[x.model,x]));return catalog.filter(m=>approved.has(m.model)&&m.suites.some(s=>selected.has(s))).map(m=>({...m,scan:approved.get(m.model)}))}
-function renderModels(){let models=approvedModels();document.querySelector('#model-summary').textContent=models.length?`${models.length} model(s) approved by this machine scan will be used for the selected suite(s).`:'No scan-approved models support the selected suite(s).';document.querySelector('#models').innerHTML=models.map(m=>`<div class="model"><strong>${esc(m.model)}</strong><span class="tag">${esc(m.suites.join(', '))} · ${esc(m.scan.eligibility)}</span></div>`).join('')}
-async function load(){let d=await get('/api/overview');catalog=d.catalog;scan=d.scan||{};let store=scan.ollama_models_storage||{},root=scan.root_storage||{};document.querySelector('#machine').innerHTML=`<div class="metric"><span class="muted">Available RAM</span><b>${scan.available_ram_gib??'?'} GiB</b></div><div class="metric"><span class="muted">Free VRAM</span><b>${scan.available_vram_gib??'?'} GiB</b></div><div class="metric"><span class="muted">Root disk free</span><b>${root.free_gib??'?'} / ${root.total_gib??'?'} GiB</b></div><div class="metric"><span class="muted">Ollama disk free</span><b>${store.free_gib??'?'} / ${store.total_gib??'?'} GiB</b></div>`;
-document.querySelector('#suites').innerHTML=d.suites.map((s,i)=>`<label><input type="checkbox" name="suite" value="${s}" ${i===0?'checked':''}> ${s}</label>`).join('');document.querySelectorAll('input[name="suite"]').forEach(x=>x.onchange=renderModels);renderModels();await runs()}
+function renderModels(){let models=approvedModels();document.querySelector('#model-summary').textContent=models.length?`${models.length} model(s) approved by this machine scan will be used for the selected suite(s).`:'No scan-approved models support the selected suite(s).';document.querySelector('#models').innerHTML=models.map(m=>{let ready=installed[m.model],label=ready?'Installed':'Not installed';return `<div class="model"><div class="model-head"><strong>${esc(m.model)}</strong><span class="${ready?'installed':'missing'}">${label}</span></div><span class="tag">${esc(m.suites.join(', '))} · ${esc(m.scan.eligibility)}</span></div>`}).join('')}
+function invalidatePrecheck(){precheck=null;document.querySelector('#start').disabled=true;document.querySelector('#precheck-report').className='precheck';document.querySelector('#precheck-report').textContent='Run the precheck before starting a benchmark.'}
+function precheckPayload(){return {models:approvedModels().map(m=>m.model),suites:selectedSuites(),profile:document.querySelector('#profile').value}}
+function saveSelection(){localStorage.setItem('ai-benchmark-selection',JSON.stringify({suites:selectedSuites(),profile:document.querySelector('#profile').value}))}
+function allSelectedModelsInstalled(){return approvedModels().every(m=>installed[m.model])}
+async function refreshPrecheck(){if(!precheck)return;let d=await get('/api/precheck/'+precheck.id);precheck=d;let report=document.querySelector('#precheck-report');report.className='precheck '+(d.status==='passed'?'passed':d.status==='failed'?'failed':'');report.textContent=d.status==='running'?'Precheck is running. Dependencies, cache and model downloads are being prepared…':d.status==='passed'?'Precheck passed. You can start this exact benchmark selection.':`Precheck failed (exit code ${d.exit_code}). Check the log below.`;document.querySelector('#log').textContent=d.output||'';if(d.status==='passed'){let overview=await get('/api/overview');installed=overview.installed||{};renderModels()}document.querySelector('#start').disabled=d.status!=='passed'||!allSelectedModelsInstalled();document.querySelector('#precheck').disabled=d.status==='running';if(d.status==='running')setTimeout(refreshPrecheck,2500)}
+async function restorePrecheck(){let response=await fetch('/api/precheck-status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(precheckPayload())});if(!response.ok)return;let record=await response.json();if(record.status!=='missing'){precheck=record;await refreshPrecheck()}}
+function diskMetric(label,disk){let free=Number(disk.free_gib),total=Number(disk.total_gib),used=Number(disk.used_gib),percent=total?Math.round(free/total*100):0,colour=percent<15?'space-red':percent<30?'space-orange':'space-green';return `<div class="metric"><span class="muted">${label}</span><b class="${colour}">${percent}% free</b><small>${free.toFixed(2)} GiB free / ${total.toFixed(2)} GiB total (${used.toFixed(2)} GiB used)</small></div>`}
+async function load(){let d=await get('/api/overview');catalog=d.catalog;scan=d.scan||{};installed=d.installed||{};let store=scan.ollama_models_storage||{},root=scan.root_storage||{},same=scan.ollama_models_on_root_filesystem;let disks=same?diskMetric('Root & Ollama disk',store):diskMetric('Root disk',root)+diskMetric('Ollama disk',store);document.querySelector('#machine').innerHTML=`<div class="metric"><span class="muted">Available RAM</span><b>${scan.available_ram_gib??'?'} GiB</b></div><div class="metric"><span class="muted">Free VRAM</span><b>${scan.available_vram_gib??0} GiB</b><small>No GPU is reported as 0 GiB.</small></div>${disks}`;
+document.querySelector('#suites').innerHTML=d.suites.map((s,i)=>{let label=suiteLabels[s]||[s,''];return `<label><input type="checkbox" name="suite" value="${s}" ${i===0?'checked':''}><b>${label[0]}</b><small>${label[1]}</small></label>`}).join('');try{let saved=JSON.parse(localStorage.getItem('ai-benchmark-selection')||'{}');if(Array.isArray(saved.suites)){document.querySelectorAll('input[name="suite"]').forEach(x=>x.checked=saved.suites.includes(x.value))}if(['quick','standard','full'].includes(saved.profile))document.querySelector('#profile').value=saved.profile}catch(_){}document.querySelectorAll('input[name="suite"]').forEach(x=>x.onchange=()=>{invalidatePrecheck();saveSelection();renderModels()});document.querySelector('#select-all').onclick=()=>{document.querySelectorAll('input[name="suite"]').forEach(x=>x.checked=true);invalidatePrecheck();saveSelection();renderModels()};document.querySelector('#profile').onchange=()=>{invalidatePrecheck();saveSelection()};renderModels();await restorePrecheck();await runs()}
 async function runs(){let d=await get('/api/runs');document.querySelector('#runs').innerHTML=d.length?d.map(r=>{let p=r.state.progress||{};return `<p><button onclick="showLog('${r.id}')">Log</button> <b>${esc(r.id)}</b> — ${esc(r.state.status||'unknown')} — ${p.completed||0}/${p.total||0} (${p.percent||0}%)</p>`}).join(''):'No runs yet.'}
 async function showLog(id){document.querySelector('#log').textContent=(await get('/api/log/'+encodeURIComponent(id))).log}
-document.querySelector('#start').onclick=async()=>{let models=approvedModels().map(m=>m.model),suites=selectedSuites(),message=document.querySelector('#message');if(!models.length||!suites.length){message.textContent='Choose a suite with at least one scan-approved model.';return}if(!confirm(`Start ${suites.join(', ')} with all ${models.length} approved model(s)? Missing models may be downloaded.`))return;message.textContent='Starting preflight…';try{let r=await fetch('/api/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({models,suites,profile:document.querySelector('#profile').value})});let d=await r.json();if(!r.ok)throw Error(d.error);message.textContent=d.message;setTimeout(runs,1500)}catch(e){message.textContent=e.message}}
+document.querySelector('#precheck').onclick=async()=>{let payload=precheckPayload(),message=document.querySelector('#message');if(!payload.models.length||!payload.suites.length){message.textContent='Choose a suite with at least one scan-approved model.';return}message.textContent='Starting precheck…';try{let r=await fetch('/api/precheck',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});let d=await r.json();if(!r.ok)throw Error(d.error);precheck=d;message.textContent='';refreshPrecheck()}catch(e){message.textContent=e.message}}
+document.querySelector('#start').onclick=async()=>{let payload=precheckPayload(),message=document.querySelector('#message');if(!precheck||precheck.status!=='passed')return;if(!confirm(`Start ${payload.suites.join(', ')} with all ${payload.models.length} approved model(s)?`))return;message.textContent='Starting benchmark…';try{let r=await fetch('/api/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...payload,precheck_id:precheck.id})});let d=await r.json();if(!r.ok)throw Error(d.error);message.textContent=d.message;setTimeout(runs,1500)}catch(e){message.textContent=e.message}}
 load().catch(e=>document.body.insertAdjacentHTML('beforeend','<pre>'+esc(e.message)+'</pre>'));setInterval(runs,5000)
 </script></html>"""
 
@@ -137,8 +190,14 @@ class App(BaseHTTPRequestHandler):
                 scan = latest_scan()
             except (OSError, subprocess.SubprocessError) as exc:
                 self.send_json({"error": f"Machine scan failed: {exc}"}, 500); return
-            self.send_json({"catalog": load_catalog(), "suites": SUITES, "scan": scan}); return
+            self.send_json({"catalog": load_catalog(), "suites": SUITES, "scan": scan, "installed": installed_models(scan)}); return
         if self.path == "/api/runs": self.send_json([run_summary(p) for p in run_directories()[:30]]); return
+        if self.path.startswith("/api/precheck/"):
+            identifier = Path(self.path.removeprefix("/api/precheck/")).name
+            record = json_file(precheck_path(identifier), None)
+            if record:
+                record["output"] = tail(Path(record["log"]))
+            self.send_json(record if record else {"error": "Precheck not found"}, 200 if record else 404); return
         if self.path.startswith("/api/log/"):
             identifier = Path(self.path.removeprefix("/api/log/")).name
             match = next((p for p in run_directories() if p.name == identifier), None)
@@ -146,7 +205,7 @@ class App(BaseHTTPRequestHandler):
         self.send_json({"error": "Not found"}, 404)
 
     def do_POST(self) -> None:
-        if self.path != "/api/start": self.send_json({"error": "Not found"}, 404); return
+        if self.path not in {"/api/start", "/api/precheck", "/api/precheck-status"}: self.send_json({"error": "Not found"}, 404); return
         try:
             length = int(self.headers.get("Content-Length", "0")); payload = json.loads(self.rfile.read(length))
             models = {str(m) for m in payload["models"]}; suites = [str(s) for s in payload["suites"]]
@@ -155,7 +214,31 @@ class App(BaseHTTPRequestHandler):
             if not models <= known: raise ValueError("Unknown model selection.")
             profile = str(payload.get("profile", "standard"))
             if profile not in {"quick", "standard", "full"}: raise ValueError("Invalid profile.")
-            config = selected_catalog(models); log = results_root() / "ui-launch.log"; log.parent.mkdir(parents=True, exist_ok=True)
+            identity = json.dumps({"models": sorted(models), "suites": suites, "profile": profile}, separators=(",", ":"))
+            identifier = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+            if self.path == "/api/precheck-status":
+                record = json_file(precheck_path(identifier), {"status": "missing"})
+                if record.get("log"):
+                    record["output"] = tail(Path(record["log"]))
+                self.send_json(record); return
+            if self.path == "/api/precheck":
+                record_path = precheck_path(identifier)
+                existing = json_file(record_path, {})
+                if existing.get("status") == "running":
+                    self.send_json(existing, HTTPStatus.ACCEPTED); return
+                config = selected_catalog(models)
+                log = results_root() / "ui-prechecks" / f"{identifier}.log"
+                record = {"id": identifier, "status": "running", "models": sorted(models), "suites": suites, "profile": profile, "config": str(config), "log": str(log), "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+                write_json(record_path, record)
+                env = {**os.environ, "BENCH_MODELS_CONFIG": str(config)}
+                command = [str(ROOT / "scripts/precheck.sh"), ",".join(suites), str(config), "1" if "coding-agent" in suites else "0", profile]
+                threading.Thread(target=finish_precheck, args=(record_path, command, env), daemon=True).start()
+                self.send_json(record, HTTPStatus.ACCEPTED); return
+            identifier = str(payload.get("precheck_id", ""))
+            record = json_file(precheck_path(identifier), {})
+            if record.get("status") != "passed": raise ValueError("Run the precheck successfully before starting a benchmark.")
+            if record.get("models") != sorted(models) or record.get("suites") != suites or record.get("profile") != profile: raise ValueError("The selection changed after the precheck. Run it again.")
+            config = Path(record["config"]); log = results_root() / "ui-launch.log"; log.parent.mkdir(parents=True, exist_ok=True)
             env = {**os.environ, "BENCH_MODELS_CONFIG": str(config)}
             with log.open("ab") as output:
                 subprocess.Popen([str(ROOT / "benchmark"), "start", *suites, "--profile", profile], cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)

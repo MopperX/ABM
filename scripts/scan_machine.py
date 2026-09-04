@@ -77,6 +77,13 @@ def storage_usage(path: Path) -> dict[str, float | str]:
     }
 
 
+def same_filesystem(left: Path, right: Path) -> bool:
+    try:
+        return left.resolve().stat().st_dev == right.resolve().stat().st_dev
+    except OSError:
+        return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Assess catalog models against current machine resources.")
     parser.add_argument("--models", required=True, help="Path to the global models.toml catalog")
@@ -135,6 +142,7 @@ def main() -> int:
         "results_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in results_storage.items()},
         "root_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in root_storage.items()},
         "ollama_models_storage": {key: round(value, 2) if isinstance(value, float) else value for key, value in ollama_storage.items()},
+        "ollama_models_on_root_filesystem": same_filesystem(Path("/"), ollama_dir),
         "models": findings,
     }
     atomic_json(Path(args.output), report)
