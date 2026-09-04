@@ -113,6 +113,33 @@ def _normalise_musicbench_rows(raw: Any) -> list[dict[str, Any]]:
     raise RuntimeError("Unknown MusicBench JSON format")
 
 
+def _load_musicbench_rows(path: Path) -> list[dict[str, Any]]:
+    """Load either a JSON document or the JSONL format used by MusicBench test-B."""
+    text = path.read_text(encoding="utf-8")
+    try:
+        return _normalise_musicbench_rows(json.loads(text))
+    except json.JSONDecodeError as document_error:
+        rows: list[dict[str, Any]] = []
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as line_error:
+                raise RuntimeError(
+                    f"MusicBench data is neither valid JSON nor valid JSONL: {path} "
+                    f"(line {line_number})"
+                ) from line_error
+            if not isinstance(row, dict):
+                raise RuntimeError(
+                    f"MusicBench JSONL record is not an object: {path} (line {line_number})"
+                )
+            rows.append(row)
+        if rows:
+            return rows
+        raise RuntimeError(f"MusicBench data contains no records: {path}") from document_error
+
+
 def prepare_musicbench(profile: str, cache: Path) -> dict[str, Any]:
     from huggingface_hub import hf_hub_download
 
@@ -123,7 +150,7 @@ def prepare_musicbench(profile: str, cache: Path) -> dict[str, Any]:
         revision=MUSICBENCH_REV,
         cache_dir=str(cache / "hf-datasets"),
     )
-    rows = _normalise_musicbench_rows(json.loads(Path(f).read_text(encoding="utf-8")))
+    rows = _load_musicbench_rows(Path(f))
     n = {"quick": 5, "standard": 20, "full": min(400, len(rows))}[profile]
     selected = even_subset(rows, n)
     samples: list[dict[str, Any]] = []
