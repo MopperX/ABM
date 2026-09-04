@@ -114,11 +114,14 @@ def precheck_path(identifier: str) -> Path:
 
 
 def reconcile_precheck(record: dict[str, Any]) -> dict[str, Any]:
-    if record.get("status") in {"running", "stopping"} and record.get("pid"):
-        try:
-            os.kill(int(record["pid"]), 0)
-        except ProcessLookupError:
+    if record.get("status") in {"running", "stopping"}:
+        if not record.get("pid"):
             record.update({"status": "cancelled", "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+        else:
+            try:
+                os.kill(int(record["pid"]), 0)
+            except ProcessLookupError:
+                record.update({"status": "cancelled", "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
     return record
 
 
