@@ -55,10 +55,12 @@ def installed_models(scan: dict[str, Any]) -> dict[str, bool]:
     present: set[str] = set()
     if shutil.which("ollama"):
         try:
-            data = json.loads(subprocess.check_output(["ollama", "list", "--format", "json"], text=True, stderr=subprocess.DEVNULL, timeout=5))
-            rows = data.get("models", []) if isinstance(data, dict) else data
-            present.update(str(row["name"]) for row in rows if isinstance(row, dict) and row.get("name"))
-        except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+            output = subprocess.check_output(["ollama", "list"], text=True, stderr=subprocess.DEVNULL, timeout=5)
+            for line in output.splitlines()[1:]:
+                columns = line.split()
+                if columns:
+                    present.add(columns[0])
+        except (OSError, subprocess.SubprocessError):
             pass
     storage = (scan.get("ollama_models_storage") or {}).get("path", "~/.ollama/models")
     cache = Path(os.environ.get("BENCH_CACHE_DIR") or Path(storage) / "benchmark-cache")
