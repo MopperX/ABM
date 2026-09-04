@@ -49,6 +49,20 @@ def total_vram_gib() -> float | None:
         return None
 
 
+def gpu_name() -> str | None:
+    if not shutil.which("nvidia-smi"):
+        return None
+    try:
+        output = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            text=True, stderr=subprocess.DEVNULL, timeout=3,
+        )
+        names = [line.strip() for line in output.splitlines() if line.strip()]
+        return ", ".join(names) if names else None
+    except Exception:
+        return None
+
+
 def available_ram_gib(snapshot: dict) -> float | None:
     value = (snapshot.get("readiness") or {}).get("memory_available_bytes")
     if value is None:
@@ -160,6 +174,7 @@ def main() -> int:
         "available_vram_gib": round(vram_gib, 2) if vram_gib is not None else None,
         "total_ram_gib": round(total_ram, 2) if total_ram is not None else None,
         "total_vram_gib": round(total_vram, 2) if total_vram is not None else None,
+        "gpu": gpu_name(),
         "cpu": snapshot.get("cpu"),
         "cpu_count": cpu_count,
         "cpu_load_percent": round(cpu_load_percent, 1) if cpu_load_percent is not None else None,
